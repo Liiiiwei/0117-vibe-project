@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <style>
+/* === Variables === */
+:root {
+  --primary: #4F46E5;
+  --primary-hover: #4338CA;
+  --primary-light: #EEF2FF;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --bg: #F9FAFB;
+  --bg-card: #FFFFFF;
+  --text: #111827;
+  --text-secondary: #6B7280;
+  --text-light: #9CA3AF;
+  --border: #E5E7EB;
+  --shadow: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh;
+}
+
+/* Header */
+.app-header {
+  background: linear-gradient(135deg, var(--primary), #7C3AED);
+  color: #fff; padding: 1.25rem 2rem;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.app-header h1 { font-size: 1.4rem; }
+.app-header .subtitle { font-size: 0.85rem; opacity: 0.85; margin-top: 0.15rem; }
+.btn-help {
+  background: rgba(255,255,255,0.2); color: #fff; border: none;
+  width: 34px; height: 34px; border-radius: 50%; font-size: 1rem; cursor: pointer;
+}
+.btn-help:hover { background: rgba(255,255,255,0.35); }
+
+/* Step Nav */
+.step-nav {
+  display: flex; background: #fff; border-bottom: 1px solid var(--border);
+  overflow-x: auto; padding: 0 0.5rem;
+}
+.step-item {
+  display: flex; align-items: center; gap: 0.4rem;
+  padding: 0.85rem 1rem; cursor: pointer;
+  border-bottom: 3px solid transparent;
+  color: var(--text-secondary); font-size: 0.85rem; white-space: nowrap;
+}
+.step-item:hover { color: var(--primary); background: var(--primary-light); }
+.step-item.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 600; }
+.step-item.completed { color: var(--success); }
+.step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%; background: var(--border);
+  color: var(--text-secondary); font-size: 0.7rem; font-weight: 700;
+}
+.step-item.active .step-num { background: var(--primary); color: #fff; }
+.step-item.completed .step-num { background: var(--success); color: #fff; }
+
+/* Main */
+.app-main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+.section { display: none; }
+.section.active { display: block; animation: fadeIn 0.25s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.section-header { margin-bottom: 1.25rem; }
+.section-header h2 { font-size: 1.3rem; font-weight: 700; }
+.section-header p { color: var(--text-secondary); margin-top: 0.2rem; font-size: 0.88rem; }
+.section-footer {
+  display: flex; justify-content: space-between; margin-top: 1.5rem;
+  padding-top: 1.25rem; border-top: 1px solid var(--border);
+}
+
+/* Card */
+.card {
+  background: #fff; border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 1.25rem; box-shadow: var(--shadow);
+}
+
+/* Forms */
+.form-group { margin-bottom: 1.1rem; }
+.form-group label { display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.3rem; }
+.required { color: var(--danger); }
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border);
+  border-radius: var(--radius); font-size: 0.88rem; font-family: inherit; color: var(--text);
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+  outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+}
+.hint { display: block; margin-top: 0.2rem; font-size: 0.78rem; color: var(--text-light); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.input-row { display: flex; gap: 0.5rem; }
+.input-row input { flex: 1; }
+.form-actions { display: flex; gap: 0.75rem; margin-top: 0.75rem; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  padding: 0.55rem 1.1rem; border: none; border-radius: var(--radius);
+  font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-secondary { background: var(--bg); color: var(--text-secondary); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--border); }
+.btn-large { padding: 0.7rem 1.8rem; font-size: 0.95rem; }
+.btn-sm { padding: 0.3rem 0.65rem; font-size: 0.78rem; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-icon {
+  width: 38px; height: 38px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: #fff; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;
+}
+
+/* AI Suggestion */
+.ai-suggestion {
+  background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: var(--radius);
+  padding: 0.8rem; margin-top: 0.5rem; font-size: 0.83rem; color: #166534; line-height: 1.7;
+}
+.ai-suggestion strong { display: block; margin-bottom: 0.2rem; }
+
+/* Loading */
+.loading { text-align: center; padding: 2rem; }
+.spinner {
+  width: 36px; height: 36px; border: 4px solid var(--border); border-top-color: var(--primary);
+  border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 0.75rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading p { color: var(--text-secondary); font-size: 0.88rem; }
+
+/* Status */
+.status-msg {
+  padding: 0.65rem 0.9rem; border-radius: var(--radius); margin-top: 0.75rem; font-size: 0.85rem;
+}
+.status-msg.success { background: #F0FDF4; color: #166534; border: 1px solid #BBF7D0; }
+.status-msg.error { background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
+.status-msg.info { background: var(--primary-light); color: var(--primary); border: 1px solid #C7D2FE; }
+
+/* Copy Results */
+.results-grid { display: grid; gap: 1rem; margin-top: 1.25rem; }
+.copy-card {
+  background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 1.1rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.copy-card:hover { box-shadow: var(--shadow-md); }
+.copy-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; }
+.badge {
+  display: inline-block; padding: 0.15rem 0.55rem;
+  background: var(--primary-light); color: var(--primary);
+  border-radius: 999px; font-size: 0.73rem; font-weight: 600;
+}
+.copy-card h4 { font-size: 0.95rem; margin-bottom: 0.3rem; }
+.copy-card .body-text { font-size: 0.87rem; color: var(--text-secondary); margin-bottom: 0.3rem; line-height: 1.6; }
+.copy-card .cta-text { font-size: 0.83rem; font-weight: 600; color: var(--primary); }
+
+/* Prompt Cards (Image Prompt) */
+.prompt-results { display: grid; gap: 1rem; margin-top: 1.25rem; }
+.prompt-card {
+  background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 1.1rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.prompt-card:hover { box-shadow: var(--shadow-md); }
+.prompt-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; }
+.prompt-card .scene { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text); }
+.prompt-card .en-prompt {
+  background: #F8FAFC; border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0.6rem 0.8rem; font-size: 0.82rem; font-family: monospace;
+  margin-bottom: 0.5rem; white-space: pre-wrap; line-height: 1.5; color: #334155;
+}
+.prompt-card .zh-desc { font-size: 0.83rem; color: var(--text-secondary); margin-bottom: 0.5rem; line-height: 1.6; }
+.prompt-card .meta { display: flex; gap: 1rem; font-size: 0.78rem; color: var(--text-light); }
+.meta-tag {
+  display: inline-block; padding: 0.15rem 0.45rem; background: #F1F5F9;
+  border-radius: 4px; font-size: 0.75rem; color: #475569;
+}
+
+/* Combination */
+.combo-workspace { display: grid; grid-template-columns: 280px 1fr; gap: 1.25rem; min-height: 350px; }
+.combo-sidebar {
+  background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 0.9rem; max-height: 550px; overflow-y: auto;
+}
+.sidebar-section { margin-bottom: 1.25rem; }
+.sidebar-section h3 {
+  font-size: 0.82rem; font-weight: 700; margin-bottom: 0.6rem;
+  padding-bottom: 0.4rem; border-bottom: 1px solid var(--border);
+}
+.selectable-item {
+  padding: 0.45rem 0.65rem; border: 1px solid var(--border); border-radius: var(--radius);
+  margin-bottom: 0.4rem; cursor: pointer; font-size: 0.78rem;
+}
+.selectable-item:hover { border-color: var(--primary); background: var(--primary-light); }
+.combo-main { min-width: 0; }
+.combo-actions { display: flex; gap: 0.6rem; margin-bottom: 0.9rem; }
+.combo-card {
+  background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 1.1rem; margin-bottom: 0.9rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.combo-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; }
+.combo-card-header h4 { font-size: 0.95rem; font-weight: 700; color: var(--primary); }
+.combo-content { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+.combo-section { padding: 0.65rem; background: var(--bg); border-radius: var(--radius); }
+.combo-section h5 { font-size: 0.78rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text-secondary); }
+.combo-section select { width: 100%; padding: 0.4rem; font-size: 0.8rem; border: 1px solid var(--border); border-radius: 4px; }
+.combo-section .preview { margin-top: 0.4rem; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.5; }
+.empty-hint { color: var(--text-light); font-size: 0.83rem; text-align: center; padding: 0.8rem; }
+
+/* Export */
+.export-options { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.25rem; }
+.export-option { text-align: center; }
+.export-option h3 { font-size: 0.95rem; margin-bottom: 0.4rem; }
+.export-option p { font-size: 0.83rem; color: var(--text-secondary); margin-bottom: 0.8rem; }
+.export-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.export-table th, .export-table td { padding: 0.5rem 0.6rem; border: 1px solid var(--border); text-align: left; }
+.export-table th { background: var(--bg); font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;
+  z-index: 1000; padding: 1rem;
+}
+.modal {
+  background: #fff; border-radius: var(--radius-lg); box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+  max-width: 600px; width: 100%; max-height: 85vh; overflow-y: auto;
+}
+.modal-header {
+  padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-header h2 { font-size: 1.05rem; }
+.modal-close { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text-secondary); }
+.modal-body { padding: 1.25rem; }
+.modal-footer {
+  padding: 0.8rem 1.25rem; border-top: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.modal-actions { display: flex; gap: 0.5rem; }
+
+/* Onboarding */
+.ob-step { display: none; text-align: center; }
+.ob-step.active { display: block; }
+.ob-step .icon { font-size: 2.5rem; margin-bottom: 0.8rem; }
+.ob-step h3 { font-size: 1.05rem; margin-bottom: 0.6rem; }
+.ob-step p, .ob-step li { font-size: 0.87rem; color: var(--text-secondary); }
+.ob-step ol, .ob-step ul { text-align: left; padding-left: 1.3rem; }
+.ob-step li { margin-bottom: 0.4rem; }
+.dots { display: flex; gap: 0.4rem; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--border); cursor: pointer; }
+.dot.active { background: var(--primary); }
+
+/* Help */
+.help-tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
+.help-tab {
+  padding: 0.5rem 0.9rem; border: none; background: none; cursor: pointer;
+  font-size: 0.83rem; font-weight: 600; color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+}
+.help-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+.help-section { margin-bottom: 1.2rem; }
+.help-section h4 { font-size: 0.9rem; margin-bottom: 0.4rem; }
+.help-section p, .help-section li { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.7; }
+.prompt-example {
+  background: var(--bg); border-radius: var(--radius); padding: 0.8rem; margin: 0.4rem 0;
+}
+.prompt-example code {
+  display: block; background: #fff; border: 1px solid var(--border);
+  padding: 0.4rem 0.6rem; border-radius: var(--radius); font-size: 0.78rem; margin-top: 0.2rem; white-space: pre-wrap;
+}
+.faq-item { margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border); }
+.faq-item:last-child { border-bottom: none; }
+.faq-item h4 { color: var(--text); margin-bottom: 0.3rem; font-size: 0.88rem; }
+.faq-item p { font-size: 0.83rem; color: var(--text-secondary); }
+
+/* Footer */
+.app-footer { text-align: center; padding: 1.2rem; color: var(--text-light); font-size: 0.78rem; border-top: 1px solid var(--border); margin-top: 1.5rem; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .app-header { padding: 0.9rem; }
+  .app-header h1 { font-size: 1.15rem; }
+  .step-item { padding: 0.6rem 0.5rem; }
+  .step-label { display: none; }
+  .app-main { padding: 0.9rem; }
+  .form-row { grid-template-columns: 1fr; }
+  .combo-workspace { grid-template-columns: 1fr; }
+  .export-options { grid-template-columns: 1fr; }
+  .combo-content { grid-template-columns: 1fr; }
+  .section-footer { flex-direction: column; gap: 0.6rem; }
+  .section-footer .btn { width: 100%; }
+}
+  </style>
+</head>
+<body>
+
+<!-- ========== Onboarding Modal ========== -->
+<div id="onboarding-modal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header"><h2>歡迎使用 AI 廣告素材產生器</h2></div>
+    <div class="modal-body">
+      <div class="ob-step active" data-step="0">
+        <div class="icon">&#x1F680;</div>
+        <h3>快速產出廣告素材</h3>
+        <p>利用 AI 技術，幾分鐘內生成多組廣告文案與圖片 Prompt，大幅提升製作效率。</p>
+      </div>
+      <div class="ob-step" data-step="1">
+        <div class="icon">&#x1F4DD;</div>
+        <h3>操作流程</h3>
+        <ol>
+          <li><strong>設定 API Key</strong> — 輸入您的 OpenAI 或 Google AI API Key</li>
+          <li><strong>定義專案</strong> — 填寫產品資訊與廣告目標</li>
+          <li><strong>生成文案</strong> — AI 自動產生多組廣告文案</li>
+          <li><strong>生成圖片 Prompt</strong> — AI 產出可用於 Midjourney/DALL-E 的 Prompt</li>
+          <li><strong>組合測試</strong> — 搭配文案與圖片 Prompt，準備 A/B 測試</li>
+          <li><strong>匯出結果</strong> — 下載 CSV 或寫入 Google Sheets</li>
+        </ol>
+      </div>
+      <div class="ob-step" data-step="2">
+        <div class="icon">&#x1F511;</div>
+        <h3>API Key 安全提示</h3>
+        <ul>
+          <li>API Key 透過 Google Apps Script 後端處理，不在前端暴露</li>
+          <li>建議為此應用設定獨立的 API Key 並設定使用上限</li>
+          <li>切勿將 API Key 分享給他人</li>
+        </ul>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div class="dots">
+        <span class="dot active" data-step="0"></span>
+        <span class="dot" data-step="1"></span>
+        <span class="dot" data-step="2"></span>
+      </div>
+      <div class="modal-actions">
+        <button id="ob-prev" class="btn btn-secondary" style="display:none">上一步</button>
+        <button id="ob-next" class="btn btn-primary">下一步</button>
+        <button id="ob-close" class="btn btn-primary" style="display:none">開始使用</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Help Modal ========== -->
+<div id="help-modal" class="modal-overlay" style="display:none">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-header">
+      <h2>使用說明與幫助</h2>
+      <button class="modal-close" onclick="document.getElementById('help-modal').style.display='none'">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="help-tabs">
+        <button class="help-tab active" data-tab="guide">操作指引</button>
+        <button class="help-tab" data-tab="prompt-tips">Prompt 技巧</button>
+        <button class="help-tab" data-tab="faq">常見問題</button>
+      </div>
+      <div id="help-guide">
+        <div class="help-section"><h4>1. 設定 API Key</h4><p>支援 OpenAI (GPT) 和 Google AI (Gemini)。如何取得：</p><ul><li><strong>OpenAI：</strong>前往 platform.openai.com → API Keys → 建立新的 Key</li><li><strong>Google AI：</strong>前往 aistudio.google.com → 取得 API Key</li></ul></div>
+        <div class="help-section"><h4>2. 專案設定</h4><p>填寫產品資訊、選擇廣告目標、描述目標受眾。越詳細越好。</p></div>
+        <div class="help-section"><h4>3. 文案生成</h4><p>選擇風格後點擊生成，AI 將產出多組含標題、內文、CTA 的文案。</p></div>
+        <div class="help-section"><h4>4. 圖片 Prompt 生成</h4><p>AI 會產出可直接用於 Midjourney / DALL-E / Stable Diffusion 的英文 Prompt，附帶中文說明、建議平台與比例。</p></div>
+        <div class="help-section"><h4>5. 素材組合</h4><p>選擇文案與圖片 Prompt 進行搭配，建立多個 A/B 測試組合。</p></div>
+        <div class="help-section"><h4>6. 匯出結果</h4><p>CSV 下載、複製到剪貼簿，或直接寫入 Google Sheets。</p></div>
+      </div>
+      <div id="help-prompt-tips" style="display:none">
+        <div class="help-section">
+          <h4>文案 Prompt - 產品描述怎麼寫？</h4>
+          <div class="prompt-example">
+            <p><strong>好的描述：</strong></p>
+            <code>這是一款針對 25-35 歲上班族的智能水壺，主打自動提醒喝水功能，搭配 App 追蹤每日飲水量。售價 NT$1,200，比同類產品便宜 30%。</code>
+            <p style="margin-top:0.5rem"><strong>不好的描述：</strong></p>
+            <code>水壺，很好用</code>
+          </div>
+          <h4 style="margin-top:0.8rem">技巧要點</h4>
+          <ul>
+            <li><strong>具體化：</strong>包含價格、功能特點、目標用戶</li>
+            <li><strong>差異化：</strong>說明與競品的不同</li>
+            <li><strong>場景化：</strong>描述使用場景</li>
+            <li><strong>數據化：</strong>提供具體數字</li>
+          </ul>
+        </div>
+      </div>
+      <div id="help-faq" style="display:none">
+        <div class="faq-item"><h4>Q: API Key 安全嗎？</h4><p>A: API Key 透過 Google Apps Script 後端處理，不會暴露在瀏覽器中。但仍建議設定使用上限。</p></div>
+        <div class="faq-item"><h4>Q: 使用 AI API 需要費用嗎？</h4><p>A: 是的，呼叫 AI API 會產生費用。GPT-4o-mini 費用非常低廉，生成一次約 0.01-0.05 美元。</p></div>
+        <div class="faq-item"><h4>Q: 什麼是 A/B 測試？</h4><p>A: 同時投放不同版本的廣告素材，比較成效（點擊率、轉化率），找出最佳組合。</p></div>
+        <div class="faq-item"><h4>Q: 圖片 Prompt 怎麼用？</h4><p>A: 將生成的英文 Prompt 複製到 Midjourney、DALL-E 或 Stable Diffusion 等工具中，即可生成對應圖片。</p></div>
+        <div class="faq-item"><h4>Q: CTA 是什麼？</h4><p>A: CTA (Call to Action) 是「行動呼籲」，例如「立即購買」、「免費試用」、「了解更多」。</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== Header ========== -->
+<header class="app-header">
+  <div>
+    <h1>AI 廣告素材產生器</h1>
+    <p class="subtitle">快速生成廣告文案與圖片 Prompt</p>
+  </div>
+  <button class="btn-help" id="help-btn" title="使用說明">?</button>
+</header>
+
+<!-- ========== Step Nav ========== -->
+<nav class="step-nav">
+  <div class="step-item active" data-section="sec-api"><span class="step-num">1</span><span class="step-label">API 設定</span></div>
+  <div class="step-item" data-section="sec-project"><span class="step-num">2</span><span class="step-label">專案設定</span></div>
+  <div class="step-item" data-section="sec-copy"><span class="step-num">3</span><span class="step-label">文案生成</span></div>
+  <div class="step-item" data-section="sec-image"><span class="step-num">4</span><span class="step-label">圖片 Prompt</span></div>
+  <div class="step-item" data-section="sec-combo"><span class="step-num">5</span><span class="step-label">素材組合</span></div>
+  <div class="step-item" data-section="sec-export"><span class="step-num">6</span><span class="step-label">匯出結果</span></div>
+</nav>
+
+<!-- ========== Main ========== -->
+<main class="app-main">
+
+  <!-- Section 1: API -->
+  <section id="sec-api" class="section active">
+    <div class="section-header">
+      <h2>API 設定</h2>
+      <p>輸入您的 AI 服務 API Key，用於呼叫文案與圖片 Prompt 生成。</p>
+    </div>
+    <div class="card">
+      <div class="form-group">
+        <label for="ai-provider">AI 服務提供者</label>
+        <select id="ai-provider">
+          <option value="openai">OpenAI (GPT-4o-mini)</option>
+          <option value="google">Google AI (Gemini 2.0 Flash)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="api-key">API Key</label>
+        <div class="input-row">
+          <input type="password" id="api-key" placeholder="輸入您的 API Key...">
+          <button class="btn-icon" id="toggle-key" title="顯示/隱藏">&#128065;</button>
+        </div>
+        <small class="hint">Key 透過 Apps Script 後端傳送至 AI 服務，不會在前端暴露。</small>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="save-key">儲存設定</button>
+        <button class="btn btn-secondary" id="test-key">測試連線</button>
+      </div>
+      <div id="api-status" class="status-msg" style="display:none"></div>
+    </div>
+    <div class="section-footer">
+      <span></span>
+      <button class="btn btn-primary" onclick="goTo('sec-project')">下一步：專案設定 &rarr;</button>
+    </div>
+  </section>
+
+  <!-- Section 2: Project -->
+  <section id="sec-project" class="section">
+    <div class="section-header">
+      <h2>專案設定與目標定義</h2>
+      <p>填寫產品/服務資訊與廣告目標，AI 將據此生成素材。</p>
+    </div>
+    <div class="card">
+      <div class="form-group">
+        <label for="product-name">產品/服務名稱 <span class="required">*</span></label>
+        <input type="text" id="product-name" placeholder="例如：智能水壺 AquaSmart">
+      </div>
+      <div class="form-group">
+        <label for="product-desc">產品/服務簡述 <span class="required">*</span></label>
+        <textarea id="product-desc" rows="4" placeholder="請描述產品特點、功能、售價、與競品差異等..."></textarea>
+        <small class="hint">越詳細的描述，AI 生成的素材品質越好。</small>
+      </div>
+      <div class="form-group">
+        <label for="ad-goal">廣告目標 <span class="required">*</span></label>
+        <select id="ad-goal">
+          <option value="">請選擇廣告目標...</option>
+          <option value="brand-awareness">品牌認知 — 提升品牌知名度與曝光</option>
+          <option value="traffic">網站流量 — 導引更多訪客到網站</option>
+          <option value="leads">潛在客戶獲取 — 收集潛在客戶資訊</option>
+          <option value="conversions">銷售轉化 — 直接促成購買行為</option>
+        </select>
+        <div id="goal-tip" class="ai-suggestion" style="display:none"></div>
+      </div>
+      <div class="form-group">
+        <label for="audience">目標受眾描述 <span class="required">*</span></label>
+        <textarea id="audience" rows="3" placeholder="例如：25-35 歲上班族，注重健康，居住大台北地區..."></textarea>
+        <button class="btn btn-secondary btn-sm" id="gen-persona">AI 生成受眾畫像</button>
+        <div id="persona-result" class="ai-suggestion" style="display:none"></div>
+      </div>
+      <div class="form-group">
+        <label for="selling-points">核心賣點</label>
+        <textarea id="selling-points" rows="2" placeholder="例如：自動提醒喝水、App 追蹤飲水量、比同類產品便宜 30%"></textarea>
+      </div>
+    </div>
+    <div class="section-footer">
+      <button class="btn btn-secondary" onclick="goTo('sec-api')">&larr; 上一步</button>
+      <button class="btn btn-primary" onclick="goTo('sec-copy')">下一步：文案生成 &rarr;</button>
+    </div>
+  </section>
+
+  <!-- Section 3: Copy Generation -->
+  <section id="sec-copy" class="section">
+    <div class="section-header">
+      <h2>AI 文案生成</h2>
+      <p>根據專案設定，AI 自動生成多組廣告文案。</p>
+    </div>
+    <div class="card">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="copy-style">文案風格</label>
+          <select id="copy-style">
+            <option value="professional">專業可靠</option>
+            <option value="humorous">幽默輕鬆</option>
+            <option value="urgent">緊迫限時</option>
+            <option value="question">提問引導</option>
+            <option value="pain-point">痛點解決</option>
+            <option value="storytelling">故事敘述</option>
+            <option value="emotional">情感訴求</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="copy-count">生成組數</label>
+          <select id="copy-count">
+            <option value="3">3 組</option>
+            <option value="5" selected>5 組</option>
+            <option value="8">8 組</option>
+          </select>
+        </div>
+      </div>
+      <div id="style-tip" class="ai-suggestion" style="display:none"></div>
+      <div class="form-actions">
+        <button class="btn btn-primary btn-large" id="gen-copy">生成文案</button>
+      </div>
+      <div id="copy-loading" class="loading" style="display:none">
+        <div class="spinner"></div><p>AI 正在生成文案，請稍候...</p>
+      </div>
+    </div>
+    <div id="copy-results" class="results-grid" style="display:none"></div>
+    <div class="section-footer">
+      <button class="btn btn-secondary" onclick="goTo('sec-project')">&larr; 上一步</button>
+      <button class="btn btn-primary" onclick="goTo('sec-image')">下一步：圖片 Prompt &rarr;</button>
+    </div>
+  </section>
+
+  <!-- Section 4: Image Prompt -->
+  <section id="sec-image" class="section">
+    <div class="section-header">
+      <h2>AI 圖片 Prompt 生成</h2>
+      <p>AI 產出可直接用於 Midjourney / DALL-E / Stable Diffusion 的圖片生成 Prompt。</p>
+    </div>
+    <div class="card">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="img-style">圖片風格</label>
+          <select id="img-style">
+            <option value="minimalist">極簡風格</option>
+            <option value="tech">科技感</option>
+            <option value="warm">溫馨自然</option>
+            <option value="bold">大膽鮮明</option>
+            <option value="elegant">優雅精緻</option>
+            <option value="lifestyle">生活場景</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="img-count">生成數量</label>
+          <select id="img-count">
+            <option value="3">3 組</option>
+            <option value="5" selected>5 組</option>
+            <option value="8">8 組</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="img-desc">補充描述（選填）</label>
+        <textarea id="img-desc" rows="2" placeholder="描述期望的場景、元素、色調等，讓 Prompt 更精準..."></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary btn-large" id="gen-img-prompt">生成圖片 Prompt</button>
+      </div>
+      <div id="img-loading" class="loading" style="display:none">
+        <div class="spinner"></div><p>AI 正在生成圖片 Prompt，請稍候...</p>
+      </div>
+    </div>
+    <div id="img-results" class="prompt-results" style="display:none"></div>
+    <div class="section-footer">
+      <button class="btn btn-secondary" onclick="goTo('sec-copy')">&larr; 上一步</button>
+      <button class="btn btn-primary" onclick="goTo('sec-combo')">下一步：素材組合 &rarr;</button>
+    </div>
+  </section>
+
+  <!-- Section 5: Combination -->
+  <section id="sec-combo" class="section">
+    <div class="section-header">
+      <h2>素材組合與測試準備</h2>
+      <p>選擇文案與圖片 Prompt 進行搭配，建立 A/B 測試組合。</p>
+    </div>
+    <div class="combo-workspace">
+      <div class="combo-sidebar">
+        <div class="sidebar-section">
+          <h3>可用文案</h3>
+          <div id="avail-copies"><p class="empty-hint">尚未生成文案</p></div>
+        </div>
+        <div class="sidebar-section">
+          <h3>可用圖片 Prompt</h3>
+          <div id="avail-prompts"><p class="empty-hint">尚未生成圖片 Prompt</p></div>
+        </div>
+      </div>
+      <div class="combo-main">
+        <div class="combo-actions">
+          <button class="btn btn-primary" id="add-combo">+ 新增組合</button>
+          <button class="btn btn-secondary" id="auto-combo">自動配對</button>
+        </div>
+        <div id="combos-list"><p class="empty-hint">點擊「新增組合」開始建立 A/B 測試組合。</p></div>
+      </div>
+    </div>
+    <div class="section-footer">
+      <button class="btn btn-secondary" onclick="goTo('sec-image')">&larr; 上一步</button>
+      <button class="btn btn-primary" onclick="goTo('sec-export')">下一步：匯出結果 &rarr;</button>
+    </div>
+  </section>
+
+  <!-- Section 6: Export -->
+  <section id="sec-export" class="section">
+    <div class="section-header">
+      <h2>數據整合與匯出</h2>
+      <p>將素材組合結果匯出，方便後續廣告投放使用。</p>
+    </div>
+    <div class="card" id="export-preview">
+      <h3 style="margin-bottom:0.8rem">匯出預覽</h3>
+      <div id="export-table"><p class="empty-hint">尚未建立任何素材組合。</p></div>
+    </div>
+    <div class="export-options">
+      <div class="card export-option">
+        <h3>複製到剪貼簿</h3>
+        <p>將所有組合資料複製為文字格式。</p>
+        <button class="btn btn-primary" id="exp-clipboard">複製到剪貼簿</button>
+      </div>
+      <div class="card export-option">
+        <h3>下載 CSV</h3>
+        <p>下載包含所有素材與組合的 CSV 檔案。</p>
+        <button class="btn btn-primary" id="exp-csv">下載 CSV</button>
+      </div>
+      <div class="card export-option">
+        <h3>寫入 Google Sheets</h3>
+        <p>自動建立新的 Google Sheet 並寫入結果。</p>
+        <button class="btn btn-primary" id="exp-sheets">建立並寫入 Sheets</button>
+      </div>
+      <div class="card export-option">
+        <h3>寫入現有 Sheets</h3>
+        <p>寫入指定的 Google Sheet。</p>
+        <input type="text" id="sheet-id" placeholder="Google Sheet ID" style="margin-bottom:0.5rem;padding:0.4rem 0.6rem;border:1px solid var(--border);border-radius:4px;font-size:0.83rem;width:100%">
+        <button class="btn btn-primary" id="exp-sheets-existing">寫入指定 Sheets</button>
+      </div>
+    </div>
+    <div id="export-status" class="status-msg" style="display:none"></div>
+    <div class="section-footer">
+      <button class="btn btn-secondary" onclick="goTo('sec-combo')">&larr; 上一步</button>
+      <span></span>
+    </div>
+  </section>
+
+</main>
+
+<footer class="app-footer">AI 廣告素材產生器 &copy; 2026 | 由 AI 驅動的廣告素材製作工具</footer>
+
+<script>
+// ============================================================
+// State
+// ============================================================
+var S = {
+  provider: 'openai',
+  apiKey: '',
+  project: {},
+  copies: [],    // {id, headline, body, cta, style}
+  imgPrompts: [], // {id, prompt_en, prompt_zh, scene_description, suggested_platform, aspect_ratio}
+  combos: [],    // {id, name, copyId, promptId}
+  nextCombo: 1
+};
+
+// ============================================================
+// Init
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+  initOnboarding();
+  initNav();
+  initApi();
+  initProject();
+  initCopy();
+  initImage();
+  initCombo();
+  initExport();
+  initHelp();
+});
+
+// ============================================================
+// Navigation
+// ============================================================
+function initNav() {
+  document.querySelectorAll('.step-item').forEach(function(el) {
+    el.addEventListener('click', function() { goTo(el.dataset.section); });
+  });
+}
+
+function goTo(id) {
+  document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+  document.querySelectorAll('.step-item').forEach(function(n) { n.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+  document.querySelector('[data-section="'+id+'"]').classList.add('active');
+  if (id === 'sec-combo') refreshComboSidebar();
+  if (id === 'sec-export') refreshExportPreview();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function markDone(id) {
+  var el = document.querySelector('[data-section="'+id+'"]');
+  if (el) el.classList.add('completed');
+}
+
+// ============================================================
+// Onboarding
+// ============================================================
+function initOnboarding() {
+  var modal = document.getElementById('onboarding-modal');
+  var cur = 0, steps = modal.querySelectorAll('.ob-step'), dots = modal.querySelectorAll('.dot');
+  function show(i) {
+    steps.forEach(function(s){s.classList.remove('active')});
+    dots.forEach(function(d){d.classList.remove('active')});
+    steps[i].classList.add('active'); dots[i].classList.add('active');
+    document.getElementById('ob-prev').style.display = i===0?'none':'inline-flex';
+    document.getElementById('ob-next').style.display = i===steps.length-1?'none':'inline-flex';
+    document.getElementById('ob-close').style.display = i===steps.length-1?'inline-flex':'none';
+  }
+  document.getElementById('ob-prev').onclick = function(){if(cur>0){cur--;show(cur);}};
+  document.getElementById('ob-next').onclick = function(){if(cur<steps.length-1){cur++;show(cur);}};
+  document.getElementById('ob-close').onclick = function(){modal.style.display='none';};
+  dots.forEach(function(d,i){d.onclick=function(){cur=i;show(i);};});
+  show(0);
+}
+
+// ============================================================
+// API Settings
+// ============================================================
+function initApi() {
+  document.getElementById('toggle-key').onclick = function() {
+    var inp = document.getElementById('api-key');
+    inp.type = inp.type==='password'?'text':'password';
+  };
+
+  document.getElementById('save-key').onclick = function() {
+    var key = document.getElementById('api-key').value.trim();
+    if (!key) { showMsg('api-status','error','請輸入 API Key。'); return; }
+    S.apiKey = key;
+    S.provider = document.getElementById('ai-provider').value;
+    showMsg('api-status','success','API Key 已儲存！');
+    markDone('sec-api');
+  };
+
+  document.getElementById('test-key').onclick = function() {
+    var key = document.getElementById('api-key').value.trim();
+    var provider = document.getElementById('ai-provider').value;
+    if (!key) { showMsg('api-status','error','請先輸入 API Key。'); return; }
+    showMsg('api-status','info','正在測試連線...');
+
+    google.script.run
+      .withSuccessHandler(function(r) {
+        showMsg('api-status', r.success?'success':'error', r.message);
+      })
+      .withFailureHandler(function(e) {
+        showMsg('api-status','error','測試失敗：'+e.message);
+      })
+      .testApiKey(provider, key);
+  };
+}
+
+// ============================================================
+// Project Settings
+// ============================================================
+function initProject() {
+  document.getElementById('ad-goal').onchange = function(e) {
+    var tips = {
+      'brand-awareness':'品牌認知目標適合新品牌推廣。建議使用視覺衝擊力強的素材，搭配品牌故事或情感訴求文案。',
+      'traffic':'網站流量目標適合有內容或電商網站的品牌。建議使用引人好奇的標題，搭配「了解更多」CTA。',
+      'leads':'潛在客戶獲取適合 B2B 或高單價產品。建議提供免費資源作為誘因，文案強調專業性。',
+      'conversions':'銷售轉化目標適合已有知名度的產品。建議使用限時優惠、好評數據，搭配強力 CTA。'
+    };
+    var div = document.getElementById('goal-tip');
+    if (tips[e.target.value]) {
+      div.innerHTML = '<strong>AI 建議：</strong>'+tips[e.target.value];
+      div.style.display = 'block';
+    } else { div.style.display='none'; }
+  };
+
+  document.getElementById('gen-persona').onclick = function() {
+    var desc = document.getElementById('product-desc').value.trim();
+    var aud = document.getElementById('audience').value.trim();
+    if (!aud) { alert('請先輸入目標受眾描述。'); return; }
+
+    var btn = document.getElementById('gen-persona');
+    btn.disabled = true; btn.textContent = '生成中...';
+
+    ensureApiKey(function() {
+      google.script.run
+        .withSuccessHandler(function(r) {
+          var div = document.getElementById('persona-result');
+          div.innerHTML = '<strong>AI 受眾畫像：</strong><br>'+formatText(r);
+          div.style.display='block';
+          btn.disabled=false; btn.textContent='AI 生成受眾畫像';
+        })
+        .withFailureHandler(function(e) {
+          alert('生成失敗：'+e.message);
+          btn.disabled=false; btn.textContent='AI 生成受眾畫像';
+        })
+        .generatePersona(S.provider, S.apiKey, desc, aud);
+    });
+  };
+}
+
+function getProjectData() {
+  S.project = {
+    productName: document.getElementById('product-name').value.trim(),
+    productDescription: document.getElementById('product-desc').value.trim(),
+    adGoal: document.getElementById('ad-goal').value,
+    targetAudience: document.getElementById('audience').value.trim(),
+    keySellingPoints: document.getElementById('selling-points').value.trim()
+  };
+  return S.project;
+}
+
+// ============================================================
+// Copy Generation
+// ============================================================
+function initCopy() {
+  document.getElementById('copy-style').onchange = function() {
+    var tips = {
+      professional:'專業風格適合 B2B 或高端產品，建議加入數據和權威引用。',
+      humorous:'幽默風格適合年輕族群和大眾消費品。',
+      urgent:'緊迫風格適合促銷活動，搭配真實限時優惠效果更佳。',
+      question:'提問風格適合引起好奇心，讓受眾想了解更多。',
+      'pain-point':'痛點風格適合解決方案型產品，先描述問題再提出解方。',
+      storytelling:'故事風格適合品牌建設，用使用者故事引起共鳴。',
+      emotional:'情感風格適合節日行銷或家庭、健康相關產品。'
+    };
+    var v = this.value, div = document.getElementById('style-tip');
+    if (tips[v]) { div.innerHTML='<strong>風格提示：</strong>'+tips[v]; div.style.display='block'; }
+    else { div.style.display='none'; }
+  };
+
+  document.getElementById('gen-copy').onclick = function() {
+    var proj = getProjectData();
+    if (!proj.productDescription||!proj.adGoal||!proj.targetAudience) {
+      alert('請先完成專案設定（產品描述、廣告目標、目標受眾為必填）。'); return;
+    }
+    ensureApiKey(function() {
+      var style = document.getElementById('copy-style').value;
+      var count = parseInt(document.getElementById('copy-count').value);
+      var btn = document.getElementById('gen-copy');
+      btn.disabled=true;
+      document.getElementById('copy-loading').style.display='block';
+      document.getElementById('copy-results').style.display='none';
+
+      google.script.run
+        .withSuccessHandler(function(r) {
+          try {
+            var arr = parseJson(r);
+            S.copies = arr.map(function(c,i){
+              return {id:'c'+Date.now()+'-'+i, headline:c.headline, body:c.body, cta:c.call_to_action, style:style};
+            });
+            renderCopies();
+            markDone('sec-copy');
+          } catch(e) { alert('AI 回傳格式錯誤，請重試。\n'+e.message); }
+          btn.disabled=false;
+          document.getElementById('copy-loading').style.display='none';
+        })
+        .withFailureHandler(function(e) {
+          alert('文案生成失敗：'+e.message);
+          btn.disabled=false;
+          document.getElementById('copy-loading').style.display='none';
+        })
+        .generateAdCopy(S.provider, S.apiKey, proj, style, count);
+    });
+  };
+}
+
+var STYLE_LABELS = {professional:'專業可靠',humorous:'幽默輕鬆',urgent:'緊迫限時',question:'提問引導','pain-point':'痛點解決',storytelling:'故事敘述',emotional:'情感訴求'};
+
+function renderCopies() {
+  var c = document.getElementById('copy-results');
+  c.style.display='grid';
+  c.innerHTML = S.copies.map(function(cp,i){
+    return '<div class="copy-card"><div class="copy-card-header"><span class="badge">'
+      +(STYLE_LABELS[cp.style]||cp.style)+' #'+(i+1)+'</span>'
+      +'<button class="btn btn-secondary btn-sm" onclick="copyText(\''+cp.id+'\')">複製</button></div>'
+      +'<h4>'+esc(cp.headline)+'</h4>'
+      +'<div class="body-text">'+esc(cp.body)+'</div>'
+      +'<div class="cta-text">'+esc(cp.cta)+'</div></div>';
+  }).join('');
+}
+
+function copyText(id) {
+  var cp = S.copies.find(function(c){return c.id===id;});
+  if (!cp) return;
+  var t = '標題：'+cp.headline+'\n內文：'+cp.body+'\nCTA：'+cp.cta;
+  copyToClipboard(t);
+}
+
+// ============================================================
+// Image Prompt Generation
+// ============================================================
+function initImage() {
+  document.getElementById('gen-img-prompt').onclick = function() {
+    var proj = getProjectData();
+    if (!proj.productDescription) { alert('請先填寫產品描述。'); return; }
+    ensureApiKey(function() {
+      var style = document.getElementById('img-style').value;
+      var count = parseInt(document.getElementById('img-count').value);
+      var desc = document.getElementById('img-desc').value.trim();
+      var btn = document.getElementById('gen-img-prompt');
+      btn.disabled=true;
+      document.getElementById('img-loading').style.display='block';
+      document.getElementById('img-results').style.display='none';
+
+      google.script.run
+        .withSuccessHandler(function(r) {
+          try {
+            var arr = parseJson(r);
+            S.imgPrompts = arr.map(function(p,i){
+              return {
+                id:'p'+Date.now()+'-'+i,
+                prompt_en: p.prompt_en,
+                prompt_zh: p.prompt_zh,
+                scene_description: p.scene_description,
+                suggested_platform: p.suggested_platform,
+                aspect_ratio: p.aspect_ratio
+              };
+            });
+            renderImgPrompts();
+            markDone('sec-image');
+          } catch(e) { alert('AI 回傳格式錯誤，請重試。\n'+e.message); }
+          btn.disabled=false;
+          document.getElementById('img-loading').style.display='none';
+        })
+        .withFailureHandler(function(e) {
+          alert('圖片 Prompt 生成失敗：'+e.message);
+          btn.disabled=false;
+          document.getElementById('img-loading').style.display='none';
+        })
+        .generateImagePrompts(S.provider, S.apiKey, proj, style, desc, count);
+    });
+  };
+}
+
+function renderImgPrompts() {
+  var c = document.getElementById('img-results');
+  c.style.display='grid';
+  c.innerHTML = S.imgPrompts.map(function(p,i){
+    return '<div class="prompt-card">'
+      +'<div class="prompt-card-header"><span class="badge">Prompt #'+(i+1)+'</span>'
+      +'<button class="btn btn-secondary btn-sm" onclick="copyPrompt(\''+p.id+'\')">複製 Prompt</button></div>'
+      +'<div class="scene">'+esc(p.scene_description)+'</div>'
+      +'<div class="en-prompt">'+esc(p.prompt_en)+'</div>'
+      +'<div class="zh-desc">'+esc(p.prompt_zh)+'</div>'
+      +'<div class="meta">'
+      +'<span class="meta-tag">'+esc(p.suggested_platform)+'</span>'
+      +'<span class="meta-tag">比例 '+esc(p.aspect_ratio)+'</span>'
+      +'</div></div>';
+  }).join('');
+}
+
+function copyPrompt(id) {
+  var p = S.imgPrompts.find(function(x){return x.id===id;});
+  if (p) copyToClipboard(p.prompt_en);
+}
+
+// ============================================================
+// Combination
+// ============================================================
+function initCombo() {
+  document.getElementById('add-combo').onclick = addCombo;
+  document.getElementById('auto-combo').onclick = autoCombo;
+}
+
+function refreshComboSidebar() {
+  var cc = document.getElementById('avail-copies');
+  if (S.copies.length===0) { cc.innerHTML='<p class="empty-hint">尚未生成文案</p>'; }
+  else {
+    cc.innerHTML = S.copies.map(function(c,i){
+      return '<div class="selectable-item">文案 #'+(i+1)+'：'+esc(c.headline.substring(0,25))+(c.headline.length>25?'...':'')+'</div>';
+    }).join('');
+  }
+  var pp = document.getElementById('avail-prompts');
+  if (S.imgPrompts.length===0) { pp.innerHTML='<p class="empty-hint">尚未生成圖片 Prompt</p>'; }
+  else {
+    pp.innerHTML = S.imgPrompts.map(function(p,i){
+      return '<div class="selectable-item">Prompt #'+(i+1)+'：'+esc(p.scene_description)+'</div>';
+    }).join('');
+  }
+  renderCombos();
+}
+
+function addCombo() {
+  S.combos.push({id:'cb'+S.nextCombo, name:'組合 '+String.fromCharCode(64+S.nextCombo), copyId:null, promptId:null});
+  S.nextCombo++;
+  renderCombos();
+}
+
+function autoCombo() {
+  if (S.copies.length===0||S.imgPrompts.length===0) { alert('請先生成文案和圖片 Prompt。'); return; }
+  S.combos=[]; S.nextCombo=1;
+  var cnt=0, max=Math.min(S.copies.length*S.imgPrompts.length,12);
+  for (var ci=0;ci<S.copies.length;ci++) {
+    for (var pi=0;pi<S.imgPrompts.length;pi++) {
+      if (cnt>=max) break;
+      S.combos.push({id:'cb'+S.nextCombo, name:'組合 '+String.fromCharCode(65+cnt), copyId:S.copies[ci].id, promptId:S.imgPrompts[pi].id});
+      S.nextCombo++; cnt++;
+    }
+    if (cnt>=max) break;
+  }
+  renderCombos();
+}
+
+function renderCombos() {
+  var el = document.getElementById('combos-list');
+  if (S.combos.length===0) { el.innerHTML='<p class="empty-hint">點擊「新增組合」開始建立。</p>'; return; }
+
+  el.innerHTML = S.combos.map(function(cb){
+    var cp = S.copies.find(function(c){return c.id===cb.copyId;});
+    var pr = S.imgPrompts.find(function(p){return p.id===cb.promptId;});
+
+    var copyOpts = '<option value="">選擇文案...</option>'+S.copies.map(function(c,i){
+      return '<option value="'+c.id+'"'+(c.id===cb.copyId?' selected':'')+'>文案 #'+(i+1)+': '+esc(c.headline.substring(0,20))+'...</option>';
+    }).join('');
+    var promptOpts = '<option value="">選擇圖片 Prompt...</option>'+S.imgPrompts.map(function(p,i){
+      return '<option value="'+p.id+'"'+(p.id===cb.promptId?' selected':'')+'>Prompt #'+(i+1)+': '+esc(p.scene_description)+'</option>';
+    }).join('');
+
+    var cpPreview = cp ? '<div class="preview"><strong>'+esc(cp.headline)+'</strong><br>'+esc(cp.body.substring(0,60))+'...<br><span style="color:var(--primary);font-weight:600">'+esc(cp.cta)+'</span></div>' : '<p class="empty-hint" style="padding:0.3rem">尚未選擇</p>';
+    var prPreview = pr ? '<div class="preview"><strong>'+esc(pr.scene_description)+'</strong><br><code style="font-size:0.73rem">'+esc(pr.prompt_en.substring(0,80))+'...</code></div>' : '<p class="empty-hint" style="padding:0.3rem">尚未選擇</p>';
+
+    return '<div class="combo-card"><div class="combo-card-header"><h4>'+esc(cb.name)+'</h4>'
+      +'<button class="btn btn-danger btn-sm" onclick="removeCombo(\''+cb.id+'\')">移除</button></div>'
+      +'<div class="combo-content">'
+      +'<div class="combo-section"><h5>文案</h5><select onchange="updateCombo(\''+cb.id+'\',\'copy\',this.value)">'+copyOpts+'</select>'+cpPreview+'</div>'
+      +'<div class="combo-section"><h5>圖片 Prompt</h5><select onchange="updateCombo(\''+cb.id+'\',\'prompt\',this.value)">'+promptOpts+'</select>'+prPreview+'</div>'
+      +'</div></div>';
+  }).join('');
+}
+
+function updateCombo(id, type, val) {
+  var cb = S.combos.find(function(c){return c.id===id;});
+  if (!cb) return;
+  if (type==='copy') cb.copyId = val||null;
+  else cb.promptId = val||null;
+  renderCombos();
+}
+
+function removeCombo(id) {
+  S.combos = S.combos.filter(function(c){return c.id!==id;});
+  renderCombos();
+}
+
+// ============================================================
+// Export
+// ============================================================
+function initExport() {
+  document.getElementById('exp-clipboard').onclick = exportClipboard;
+  document.getElementById('exp-csv').onclick = exportCSV;
+  document.getElementById('exp-sheets').onclick = function() { exportSheets(null); };
+  document.getElementById('exp-sheets-existing').onclick = function() {
+    var id = document.getElementById('sheet-id').value.trim();
+    if (!id) { alert('請輸入 Google Sheet ID。'); return; }
+    exportSheets(id);
+  };
+}
+
+function getExportData() {
+  return {
+    copies: S.copies.map(function(c){return{headline:c.headline,body:c.body,cta:c.cta,style:STYLE_LABELS[c.style]||c.style};}),
+    imagePrompts: S.imgPrompts,
+    combinations: S.combos.map(function(cb){
+      var cp = S.copies.find(function(c){return c.id===cb.copyId;});
+      var pr = S.imgPrompts.find(function(p){return p.id===cb.promptId;});
+      return {
+        name: cb.name,
+        headline: cp?cp.headline:'',
+        body: cp?cp.body:'',
+        cta: cp?cp.cta:'',
+        imagePromptEn: pr?pr.prompt_en:'',
+        imageScene: pr?pr.scene_description:''
+      };
+    })
+  };
+}
+
+function refreshExportPreview() {
+  var el = document.getElementById('export-table');
+  if (S.combos.length===0) { el.innerHTML='<p class="empty-hint">尚未建立任何素材組合。</p>'; return; }
+  var data = getExportData();
+  var html = '<table class="export-table"><thead><tr><th>組合</th><th>標題</th><th>內文</th><th>CTA</th><th>圖片場景</th></tr></thead><tbody>';
+  data.combinations.forEach(function(r){
+    html+='<tr><td>'+esc(r.name)+'</td><td>'+esc(r.headline)+'</td><td>'+esc(r.body.substring(0,50))+(r.body.length>50?'...':'')+'</td><td>'+esc(r.cta)+'</td><td>'+esc(r.imageScene)+'</td></tr>';
+  });
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+
+function exportClipboard() {
+  var d = getExportData();
+  if (d.combinations.length===0&&d.copies.length===0) { alert('沒有可匯出的資料。'); return; }
+  var t = '=== AI 廣告素材 ===\n\n';
+  t += '【文案】\n';
+  d.copies.forEach(function(c,i){t+='#'+(i+1)+' ['+c.style+']\n標題：'+c.headline+'\n內文：'+c.body+'\nCTA：'+c.cta+'\n\n';});
+  t += '【圖片 Prompt】\n';
+  d.imagePrompts.forEach(function(p,i){t+='#'+(i+1)+' '+p.scene_description+'\n'+p.prompt_en+'\n('+p.suggested_platform+', '+p.aspect_ratio+')\n\n';});
+  if (d.combinations.length>0) {
+    t += '【素材組合】\n';
+    d.combinations.forEach(function(c){t+=c.name+'：'+c.headline+' / '+c.imageScene+'\n';});
+  }
+  copyToClipboard(t);
+}
+
+function exportCSV() {
+  var d = getExportData();
+  if (d.copies.length===0) { alert('沒有可匯出的資料。'); return; }
+  var rows = [['類型','編號','標題/場景','內文/英文Prompt','CTA/建議平台','風格/比例']];
+  d.copies.forEach(function(c,i){rows.push(['文案',i+1,c.headline,c.body,c.cta,c.style]);});
+  d.imagePrompts.forEach(function(p,i){rows.push(['圖片Prompt',i+1,p.scene_description,p.prompt_en,p.suggested_platform,p.aspect_ratio]);});
+  d.combinations.forEach(function(c){rows.push(['組合',c.name,c.headline,c.imageScene,c.cta,'']);});
+  var csv = rows.map(function(r){return r.map(function(v){return '"'+(v+'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ad-creatives-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  showMsg('export-status','success','CSV 已下載！');
+}
+
+function exportSheets(existingId) {
+  var d = getExportData();
+  if (d.copies.length===0&&d.imagePrompts.length===0) { alert('沒有可匯出的資料。'); return; }
+
+  showMsg('export-status','info','正在寫入 Google Sheets...');
+
+  if (existingId) {
+    google.script.run
+      .withSuccessHandler(function(r){showMsg('export-status',r.success?'success':'error',r.message);})
+      .withFailureHandler(function(e){showMsg('export-status','error','寫入失敗：'+e.message);})
+      .exportToGoogleSheet(existingId, d);
+  } else {
+    google.script.run
+      .withSuccessHandler(function(r){
+        if (r.success) {
+          google.script.run
+            .withSuccessHandler(function(r2){
+              if (r2.success) {
+                showMsg('export-status','success','已建立並寫入 Google Sheets！');
+                window.open(r.url, '_blank');
+              } else {
+                showMsg('export-status','error',r2.message);
+              }
+            })
+            .withFailureHandler(function(e){showMsg('export-status','error',e.message);})
+            .exportToGoogleSheet(r.sheetId, d);
+        } else { showMsg('export-status','error',r.message); }
+      })
+      .withFailureHandler(function(e){showMsg('export-status','error','建立失敗：'+e.message);})
+      .createNewSheet();
+  }
+}
+
+// ============================================================
+// Help
+// ============================================================
+function initHelp() {
+  document.getElementById('help-btn').onclick = function() {
+    document.getElementById('help-modal').style.display='flex';
+  };
+  document.querySelectorAll('.help-tab').forEach(function(tab){
+    tab.onclick = function(){
+      document.querySelectorAll('.help-tab').forEach(function(t){t.classList.remove('active');});
+      ['help-guide','help-prompt-tips','help-faq'].forEach(function(id){document.getElementById(id).style.display='none';});
+      tab.classList.add('active');
+      document.getElementById('help-'+tab.dataset.tab).style.display='block';
+    };
+  });
+  document.getElementById('help-modal').onclick = function(e) {
+    if (e.target===e.currentTarget) e.currentTarget.style.display='none';
+  };
+}
+
+// ============================================================
+// Utilities
+// ============================================================
+function ensureApiKey(cb) {
+  if (!S.apiKey) {
+    S.apiKey = document.getElementById('api-key').value.trim();
+    S.provider = document.getElementById('ai-provider').value;
+  }
+  if (!S.apiKey) { alert('請先至「API 設定」步驟輸入 API Key。'); return; }
+  cb();
+}
+
+function showMsg(id, type, msg) {
+  var el = document.getElementById(id);
+  el.className='status-msg '+type; el.textContent=msg; el.style.display='block';
+  if (type!=='error') setTimeout(function(){el.style.display='none';},5000);
+}
+
+function esc(s) {
+  if (!s) return '';
+  var d=document.createElement('div'); d.textContent=s; return d.innerHTML;
+}
+
+function formatText(t) {
+  return t.replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+}
+
+function parseJson(text) {
+  var m = text.match(/\[[\s\S]*\]/);
+  if (m) {
+    try { return JSON.parse(m[0]); }
+    catch(e) { return JSON.parse(m[0].replace(/,\s*\]/g,']').replace(/,\s*\}/g,'}')); }
+  }
+  throw new Error('無法從 AI 回應中解析 JSON');
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function(){alert('已複製到剪貼簿！');});
+  } else {
+    var ta = document.createElement('textarea'); ta.value=text;
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta); alert('已複製到剪貼簿！');
+  }
+}
+</script>
+
+</body>
+</html>
