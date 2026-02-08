@@ -461,6 +461,18 @@ body {
     </div>
     <div class="card">
       <div class="form-group">
+        <label for="industry">產業類型 <span class="required">*</span></label>
+        <select id="industry">
+          <option value="">請選擇產業類型...</option>
+          <option value="ecommerce">電商產品 — 保養品、3C、服飾等</option>
+          <option value="online-course">線上課程 — 技能課、證照班、知識付費</option>
+          <option value="local-service">線下服務 — 餐飲、美容、診所、健身</option>
+          <option value="saas">SaaS / 軟體服務 — 專案管理、CRM、訂閱制</option>
+          <option value="event">活動/展覽 — 講座、展覽、市集、研討會</option>
+        </select>
+        <div id="industry-tip" class="ai-suggestion" style="display:none"></div>
+      </div>
+      <div class="form-group">
         <label for="product-name">產品/服務名稱 <span class="required">*</span></label>
         <input type="text" id="product-name" placeholder="例如：智能水壺 AquaSmart">
       </div>
@@ -791,6 +803,21 @@ function initProject() {
     } else { div.style.display='none'; }
   };
 
+  document.getElementById('industry').onchange = function(e) {
+    var tips = {
+      'ecommerce':'電商產品文案重點：產品賣點差異化、限時優惠促購、社會證明（評價/銷量）、免運/退換貨保障。',
+      'online-course':'線上課程文案重點：學員痛點共鳴、學習成果承諾、講師權威背書、學員見證/數據。',
+      'local-service':'線下服務文案重點：地理位置便利、服務體驗描述、預約/到店行動、在地口碑推薦。',
+      'saas':'SaaS 文案重點：效率提升數據、免費試用降門檻、與競品差異、客戶成功案例。',
+      'event':'活動文案重點：時間地點稀缺性、講者/亮點陣容、早鳥優惠、FOMO 錯過可惜。'
+    };
+    var div = document.getElementById('industry-tip');
+    if (tips[e.target.value]) {
+      div.innerHTML = '<strong>此產業的文案建議方向：</strong>'+tips[e.target.value];
+      div.style.display = 'block';
+    } else { div.style.display='none'; }
+  };
+
   document.getElementById('gen-persona').onclick = function() {
     var desc = document.getElementById('product-desc').value.trim();
     var aud = document.getElementById('audience').value.trim();
@@ -818,6 +845,7 @@ function initProject() {
 
 function getProjectData() {
   S.project = {
+    industry: document.getElementById('industry').value,
     productName: document.getElementById('product-name').value.trim(),
     productDescription: document.getElementById('product-desc').value.trim(),
     adGoal: document.getElementById('ad-goal').value,

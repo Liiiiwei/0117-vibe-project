@@ -160,7 +160,59 @@ function generateAdCopy(provider, apiKey, projectData, style, count) {
     'conversions': '銷售轉化'
   };
 
-  var prompt = '你是一位資深廣告文案專家。請根據以下資訊，生成 ' + count + ' 組廣告文案。\n\n'
+  // 各產業專屬文案架構
+  var industryFrameworks = {
+    'ecommerce':
+      '【電商產品文案架構】\n'
+      + '你是一位專精電商轉化的廣告文案專家，熟悉台灣電商市場。\n'
+      + '文案必須遵循以下架構：\n'
+      + '- headline 必須包含「產品核心賣點」或「具體數字/折扣」來吸引點擊\n'
+      + '- body 結構：賣點差異化 → 社會證明（銷量/評價/媒體推薦） → 限時優惠或促購誘因（免運/退換貨保障）\n'
+      + '- call_to_action 要有急迫感，如「限時搶購」「立即加入購物車」「最後 XX 組」\n'
+      + '- 每組文案要針對不同的購買動機（價格、品質、從眾、稀缺）\n',
+
+    'online-course':
+      '【線上課程文案架構】\n'
+      + '你是一位專精知識付費行銷的廣告文案專家。\n'
+      + '文案必須遵循以下架構：\n'
+      + '- headline 要直擊學員痛點或呈現學習後的理想成果\n'
+      + '- body 結構：痛點共鳴（現狀問題） → 成果承諾（學完能做到什麼） → 信任背書（講師資歷/學員數/見證）\n'
+      + '- call_to_action 要降低決策門檻，如「免費試看」「0 元先修」「立即報名享早鳥價」\n'
+      + '- 每組文案要針對不同痛點角度（時間不夠、學不會、太貴、不確定有沒有用）\n',
+
+    'local-service':
+      '【線下服務文案架構】\n'
+      + '你是一位專精在地服務行銷的廣告文案專家，熟悉台灣消費者習慣。\n'
+      + '文案必須遵循以下架構：\n'
+      + '- headline 要營造體驗感或結合地理位置優勢\n'
+      + '- body 結構：服務體驗描述（感官/情境） → 專業度/口碑佐證（評分/回頭率/年資） → 到店誘因（首次優惠/限定體驗）\n'
+      + '- call_to_action 要引導預約行動，如「立即預約」「LINE 私訊享優惠」「到店出示享 9 折」\n'
+      + '- 每組文案要針對不同到店動機（嘗鮮、送禮、犒賞自己、解決問題）\n',
+
+    'saas':
+      '【SaaS / 軟體服務文案架構】\n'
+      + '你是一位專精 B2B / SaaS 行銷的廣告文案專家。\n'
+      + '文案必須遵循以下架構：\n'
+      + '- headline 要量化效率提升或用具體數據吸引決策者\n'
+      + '- body 結構：工作痛點（效率低/流程亂） → 解決方案價值（省時/省錢/數據化） → 信任佐證（客戶數/企業案例/安全認證）\n'
+      + '- call_to_action 要零門檻體驗，如「免費試用 14 天」「立即申請 Demo」「免綁約立即啟用」\n'
+      + '- 每組文案要針對不同決策者角色（老闆看 ROI、主管看效率、使用者看易用性）\n',
+
+    'event':
+      '【活動/展覽文案架構】\n'
+      + '你是一位專精活動行銷的廣告文案專家。\n'
+      + '文案必須遵循以下架構：\n'
+      + '- headline 要製造 FOMO（錯過可惜）或突出亮點陣容/獨家內容\n'
+      + '- body 結構：活動亮點（講者/內容/體驗） → 稀缺性（限額/倒數/獨家） → 參加價值（能獲得什麼/人脈/知識）\n'
+      + '- call_to_action 要有時間急迫感，如「早鳥倒數 3 天」「限額 100 位」「立即搶位」\n'
+      + '- 每組文案要針對不同參加動機（學習成長、社交人脈、體驗獨家、怕錯過）\n'
+  };
+
+  var industry = projectData.industry || '';
+  var frameworkPrompt = industryFrameworks[industry] || '你是一位資深廣告文案專家。\n';
+
+  var prompt = frameworkPrompt
+    + '\n請根據以下資訊，生成 ' + count + ' 組廣告文案。\n\n'
     + '產品名稱：' + projectData.productName + '\n'
     + '產品描述：' + projectData.productDescription + '\n'
     + '廣告目標：' + (goalMap[projectData.adGoal] || projectData.adGoal) + '\n'
@@ -171,6 +223,7 @@ function generateAdCopy(provider, apiKey, projectData, style, count) {
     + '1. headline：標題，20 字以內，吸引眼球\n'
     + '2. body：內文，50-100 字，說明產品價值\n'
     + '3. call_to_action：行動呼籲，5-10 字\n\n'
+    + '重要：每組文案之間切角要有明顯差異，不要重複類似的表達方式。\n\n'
     + '請以 JSON 陣列格式回覆，例如：\n'
     + '[{"headline":"...","body":"...","call_to_action":"..."}]\n\n'
     + '請只回覆 JSON 陣列，不要包含其他文字或 markdown 標記。';
