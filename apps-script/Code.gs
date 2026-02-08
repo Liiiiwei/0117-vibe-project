@@ -142,7 +142,7 @@ function generatePersona(provider, apiKey, productDescription, targetAudience) {
 // 文案生成
 // ============================================================
 
-function generateAdCopy(provider, apiKey, projectData, style, count) {
+function generateAdCopy(provider, apiKey, projectData, style, count, funnel) {
   var styleMap = {
     professional: '專業可靠、數據支撐、語氣正式',
     humorous: '幽默輕鬆、有趣味性、容易引起共鳴',
@@ -208,10 +208,38 @@ function generateAdCopy(provider, apiKey, projectData, style, count) {
       + '- 每組文案要針對不同參加動機（學習成長、社交人脈、體驗獨家、怕錯過）\n'
   };
 
+  // 漏斗階段策略
+  var funnelFrameworks = {
+    'tofu':
+      '【上層漏斗 TOFU — 認知階段】\n'
+      + '受眾狀態：完全不認識品牌/產品，是陌生流量。\n'
+      + '文案策略：\n'
+      + '- headline 要用「共鳴」或「好奇」吸引停留，避免直接推銷\n'
+      + '- body 重點放在引發興趣、點出受眾痛點或理想場景，不需急著介紹產品細節\n'
+      + '- CTA 要軟性、低門檻，例如：「了解更多」「看看這個」「領取免費指南」「一分鐘測驗」\n',
+
+    'mofu':
+      '【中層漏斗 MOFU — 考慮階段】\n'
+      + '受眾狀態：已對品牌/產品有印象，正在比較評估。\n'
+      + '文案策略：\n'
+      + '- headline 要突出「差異化價值」或「社會證明」來建立信任\n'
+      + '- body 重點放在產品優勢、客戶見證、與競品差異，幫助受眾做出判斷\n'
+      + '- CTA 要提供深入了解的機會，例如：「免費試用」「索取完整方案」「預約諮詢」「下載案例」\n',
+
+    'bofu':
+      '【下層漏斗 BOFU — 轉化階段】\n'
+      + '受眾狀態：已充分了解，猶豫是否要行動。\n'
+      + '文案策略：\n'
+      + '- headline 要製造「急迫感」或「最後推力」，消除猶豫\n'
+      + '- body 重點放在限時優惠、風險保障（退款/保固）、行動後的立即好處\n'
+      + '- CTA 要直接且有急迫感，例如：「立即購買」「馬上報名」「限時 5 折」「今天下單享免運」\n'
+  };
+
   var industry = projectData.industry || '';
   var frameworkPrompt = industryFrameworks[industry] || '你是一位資深廣告文案專家。\n';
+  var funnelPrompt = funnelFrameworks[funnel] || '';
 
-  var prompt = frameworkPrompt
+  var prompt = frameworkPrompt + '\n' + funnelPrompt
     + '\n請根據以下資訊，生成 ' + count + ' 組廣告文案。\n\n'
     + '產品名稱：' + projectData.productName + '\n'
     + '產品描述：' + projectData.productDescription + '\n'
@@ -222,10 +250,10 @@ function generateAdCopy(provider, apiKey, projectData, style, count) {
     + '每組文案必須包含：\n'
     + '1. headline：標題，20 字以內，吸引眼球\n'
     + '2. body：內文，50-100 字，說明產品價值\n'
-    + '3. call_to_action：行動呼籲，5-10 字\n\n'
+    + '3. call_to_action：提供 3 個不同方向的 CTA 選項（JSON 陣列），每個 5-10 字\n\n'
     + '重要：每組文案之間切角要有明顯差異，不要重複類似的表達方式。\n\n'
     + '請以 JSON 陣列格式回覆，例如：\n'
-    + '[{"headline":"...","body":"...","call_to_action":"..."}]\n\n'
+    + '[{"headline":"...","body":"...","call_to_action":["CTA選項1","CTA選項2","CTA選項3"]}]\n\n'
     + '請只回覆 JSON 陣列，不要包含其他文字或 markdown 標記。';
 
   var result = callTextAI(provider, apiKey, prompt);
@@ -286,14 +314,14 @@ function exportToGoogleSheet(sheetId, exportData) {
     sheet.getRange(1, 1).setValue('【AI 生成文案】');
     sheet.getRange(1, 1).setFontSize(14).setFontWeight('bold').setFontColor('#4F46E5');
 
-    var copyHeaders = ['編號', '風格', '標題', '內文', 'CTA'];
+    var copyHeaders = ['編號', '漏斗階段', '風格', '標題', '內文', 'CTA 選項'];
     sheet.getRange(2, 1, 1, copyHeaders.length).setValues([copyHeaders]);
     sheet.getRange(2, 1, 1, copyHeaders.length)
       .setFontWeight('bold').setBackground('#4F46E5').setFontColor('#FFFFFF');
 
     if (exportData.copies && exportData.copies.length > 0) {
       var copyRows = exportData.copies.map(function(c, i) {
-        return [i + 1, c.style || '', c.headline || '', c.body || '', c.cta || ''];
+        return [i + 1, c.funnel || '', c.style || '', c.headline || '', c.body || '', c.cta || ''];
       });
       sheet.getRange(3, 1, copyRows.length, copyHeaders.length).setValues(copyRows);
     }

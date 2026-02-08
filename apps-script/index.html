@@ -159,6 +159,14 @@ body {
 .copy-card h4 { font-size: 0.95rem; margin-bottom: 0.3rem; }
 .copy-card .body-text { font-size: 0.87rem; color: var(--text-secondary); margin-bottom: 0.3rem; line-height: 1.6; }
 .copy-card .cta-text { font-size: 0.83rem; font-weight: 600; color: var(--primary); }
+.copy-card .cta-list { display: flex; align-items: center; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.4rem; }
+.cta-tag {
+  display: inline-block; padding: 0.2rem 0.55rem; background: var(--primary-light);
+  color: var(--primary); border-radius: 4px; font-size: 0.78rem; font-weight: 600;
+}
+.funnel-badge-tofu { background: #DBEAFE; color: #1E40AF; }
+.funnel-badge-mofu { background: #FEF3C7; color: #92400E; }
+.funnel-badge-bofu { background: #D1FAE5; color: #065F46; }
 
 /* Prompt Cards (Image Prompt) */
 .prompt-results { display: grid; gap: 1rem; margin-top: 1.25rem; }
@@ -516,6 +524,15 @@ body {
       <p>根據專案設定，AI 自動生成多組廣告文案。</p>
     </div>
     <div class="card">
+      <div class="form-group">
+        <label for="funnel-stage">漏斗階段</label>
+        <select id="funnel-stage">
+          <option value="tofu">上層 (TOFU) — 認知：讓陌生受眾認識你</option>
+          <option value="mofu">中層 (MOFU) — 考慮：讓有興趣的人深入了解</option>
+          <option value="bofu">下層 (BOFU) — 轉化：推動已考慮的人立即行動</option>
+        </select>
+        <div id="funnel-tip" class="ai-suggestion" style="display:none"></div>
+      </div>
       <div class="form-row">
         <div class="form-group">
           <label for="copy-style">文案風格</label>
@@ -858,7 +875,20 @@ function getProjectData() {
 // ============================================================
 // Copy Generation
 // ============================================================
+var FUNNEL_LABELS = {tofu:'上層(認知)',mofu:'中層(考慮)',bofu:'下層(轉化)'};
+
 function initCopy() {
+  document.getElementById('funnel-stage').onchange = function() {
+    var tips = {
+      tofu:'<strong>上層漏斗（認知）：</strong>受眾還不認識你。目標是吸引注意、引發興趣。文案重「共鳴」與「好奇」，CTA 偏軟性（了解更多、看看這個）。',
+      mofu:'<strong>中層漏斗（考慮）：</strong>受眾已有興趣，在比較選擇。目標是建立信任、展示價值。文案重「佐證」與「差異化」，CTA 偏體驗（免費試用、索取資料）。',
+      bofu:'<strong>下層漏斗（轉化）：</strong>受眾準備好了，需要臨門一腳。目標是消除疑慮、推動行動。文案重「急迫感」與「保障」，CTA 偏直接（立即購買、馬上報名）。'
+    };
+    var div = document.getElementById('funnel-tip');
+    if (tips[this.value]) { div.innerHTML=tips[this.value]; div.style.display='block'; }
+    else { div.style.display='none'; }
+  };
+
   document.getElementById('copy-style').onchange = function() {
     var tips = {
       professional:'專業風格適合 B2B 或高端產品，建議加入數據和權威引用。',
@@ -882,6 +912,7 @@ function initCopy() {
     ensureApiKey(function() {
       var style = document.getElementById('copy-style').value;
       var count = parseInt(document.getElementById('copy-count').value);
+      var funnel = document.getElementById('funnel-stage').value;
       var btn = document.getElementById('gen-copy');
       btn.disabled=true;
       document.getElementById('copy-loading').style.display='block';
@@ -893,9 +924,12 @@ function initCopy() {
           try {
             var arr = parseJson(r);
             var newCopies = arr.map(function(c,i){
-              return {id:'c'+Date.now()+'-'+i, headline:c.headline, body:c.body, cta:c.call_to_action, style:style, batchId:batchId};
+              var ctas = [];
+              if (Array.isArray(c.call_to_action)) ctas = c.call_to_action;
+              else if (typeof c.call_to_action === 'string') ctas = [c.call_to_action];
+              if (c.cta_options && Array.isArray(c.cta_options)) ctas = c.cta_options;
+              return {id:'c'+Date.now()+'-'+i, headline:c.headline, body:c.body, ctas:ctas, style:style, funnel:funnel, batchId:batchId};
             });
-            // Accumulate: append new copies to existing ones
             S.copies = S.copies.concat(newCopies);
             renderCopies();
             markDone('sec-copy');
@@ -908,7 +942,7 @@ function initCopy() {
           btn.disabled=false;
           document.getElementById('copy-loading').style.display='none';
         })
-        .generateAdCopy(S.provider, S.apiKey, proj, style, count);
+        .generateAdCopy(S.provider, S.apiKey, proj, style, count, funnel);
     });
   };
 
@@ -937,26 +971,38 @@ function renderCopies() {
   container.style.display = 'grid';
   clearBtn.style.display = 'inline-flex';
 
-  // Count by style
-  var styleCounts = {};
+  // Count by funnel + style
+  var funnelCounts = {};
   S.copies.forEach(function(cp) {
-    var label = STYLE_LABELS[cp.style] || cp.style;
-    styleCounts[label] = (styleCounts[label] || 0) + 1;
+    var fl = FUNNEL_LABELS[cp.funnel] || cp.funnel || '未分類';
+    funnelCounts[fl] = (funnelCounts[fl] || 0) + 1;
   });
-  var summary = Object.keys(styleCounts).map(function(k) { return k + ' ' + styleCounts[k] + ' 組'; }).join('、');
+  var summary = Object.keys(funnelCounts).map(function(k) { return k + ' ' + funnelCounts[k] + ' 組'; }).join('、');
   infoEl.innerHTML = '已累積 <strong>' + S.copies.length + '</strong> 組文案（' + summary + '）';
   infoEl.style.display = 'block';
 
   container.innerHTML = S.copies.map(function(cp, i) {
-    return '<div class="copy-card" id="card-'+cp.id+'"><div class="copy-card-header"><span class="badge">'
-      + (STYLE_LABELS[cp.style] || cp.style) + ' #' + (i + 1) + '</span>'
+    var fLabel = FUNNEL_LABELS[cp.funnel] || '';
+    var sLabel = STYLE_LABELS[cp.style] || cp.style;
+    var ctasHtml = (cp.ctas || []).map(function(c, ci) {
+      return '<span class="cta-tag">' + esc(c) + '</span>';
+    }).join(' ');
+    if (!ctasHtml && cp.cta) ctasHtml = '<span class="cta-tag">' + esc(cp.cta) + '</span>';
+
+    return '<div class="copy-card" id="card-'+cp.id+'">'
+      + '<div class="copy-card-header">'
+      + '<div style="display:flex;gap:0.3rem;flex-wrap:wrap">'
+      + (fLabel ? '<span class="badge funnel-badge-'+cp.funnel+'">'+fLabel+'</span>' : '')
+      + '<span class="badge">'+sLabel+' #'+(i+1)+'</span>'
+      + '</div>'
       + '<div style="display:flex;gap:0.3rem">'
-      + '<button class="btn btn-secondary btn-sm" onclick="copyText(\'' + cp.id + '\')">複製</button>'
-      + '<button class="btn btn-danger btn-sm" onclick="removeCopy(\'' + cp.id + '\')" title="刪除此文案">✕</button>'
+      + '<button class="btn btn-secondary btn-sm" onclick="copyText(\''+cp.id+'\')">複製</button>'
+      + '<button class="btn btn-danger btn-sm" onclick="removeCopy(\''+cp.id+'\')" title="刪除">✕</button>'
       + '</div></div>'
-      + '<h4>' + esc(cp.headline) + '</h4>'
-      + '<div class="body-text">' + esc(cp.body) + '</div>'
-      + '<div class="cta-text">' + esc(cp.cta) + '</div></div>';
+      + '<h4>'+esc(cp.headline)+'</h4>'
+      + '<div class="body-text">'+esc(cp.body)+'</div>'
+      + '<div class="cta-list"><span style="font-size:0.75rem;color:var(--text-light);margin-right:0.3rem">CTA：</span>'+ctasHtml+'</div>'
+      + '</div>';
   }).join('');
 }
 
@@ -968,7 +1014,8 @@ function removeCopy(id) {
 function copyText(id) {
   var cp = S.copies.find(function(c){return c.id===id;});
   if (!cp) return;
-  var t = '標題：'+cp.headline+'\n內文：'+cp.body+'\nCTA：'+cp.cta;
+  var ctas = cp.ctas ? cp.ctas.join(' / ') : (cp.cta || '');
+  var t = '標題：'+cp.headline+'\n內文：'+cp.body+'\nCTA：'+ctas;
   copyToClipboard(t);
 }
 
@@ -1102,7 +1149,8 @@ function renderCombos() {
       return '<option value="'+p.id+'"'+(p.id===cb.promptId?' selected':'')+'>Prompt #'+(i+1)+': '+esc(p.scene_description)+'</option>';
     }).join('');
 
-    var cpPreview = cp ? '<div class="preview"><strong>'+esc(cp.headline)+'</strong><br>'+esc(cp.body.substring(0,60))+'...<br><span style="color:var(--primary);font-weight:600">'+esc(cp.cta)+'</span></div>' : '<p class="empty-hint" style="padding:0.3rem">尚未選擇</p>';
+    var cpCtas = cp ? (cp.ctas||[cp.cta]).filter(Boolean).join(' / ') : '';
+    var cpPreview = cp ? '<div class="preview"><strong>'+esc(cp.headline)+'</strong><br>'+esc(cp.body.substring(0,60))+'...<br><span style="color:var(--primary);font-weight:600">'+esc(cpCtas)+'</span></div>' : '<p class="empty-hint" style="padding:0.3rem">尚未選擇</p>';
     var prPreview = pr ? '<div class="preview"><strong>'+esc(pr.scene_description)+'</strong><br><code style="font-size:0.73rem">'+esc(pr.prompt_en.substring(0,80))+'...</code></div>' : '<p class="empty-hint" style="padding:0.3rem">尚未選擇</p>';
 
     return '<div class="combo-card"><div class="combo-card-header"><h4>'+esc(cb.name)+'</h4>'
@@ -1143,7 +1191,7 @@ function initExport() {
 
 function getExportData() {
   return {
-    copies: S.copies.map(function(c){return{headline:c.headline,body:c.body,cta:c.cta,style:STYLE_LABELS[c.style]||c.style};}),
+    copies: S.copies.map(function(c){return{headline:c.headline,body:c.body,cta:(c.ctas||[c.cta]).filter(Boolean).join(' / '),style:STYLE_LABELS[c.style]||c.style,funnel:FUNNEL_LABELS[c.funnel]||''};}),
     imagePrompts: S.imgPrompts,
     combinations: S.combos.map(function(cb){
       var cp = S.copies.find(function(c){return c.id===cb.copyId;});
@@ -1152,7 +1200,7 @@ function getExportData() {
         name: cb.name,
         headline: cp?cp.headline:'',
         body: cp?cp.body:'',
-        cta: cp?cp.cta:'',
+        cta: cp?(cp.ctas||[cp.cta]).filter(Boolean).join(' / '):'',
         imagePromptEn: pr?pr.prompt_en:'',
         imageScene: pr?pr.scene_description:''
       };
@@ -1164,7 +1212,7 @@ function refreshExportPreview() {
   var el = document.getElementById('export-table');
   if (S.combos.length===0) { el.innerHTML='<p class="empty-hint">尚未建立任何素材組合。</p>'; return; }
   var data = getExportData();
-  var html = '<table class="export-table"><thead><tr><th>組合</th><th>標題</th><th>內文</th><th>CTA</th><th>圖片場景</th></tr></thead><tbody>';
+  var html = '<table class="export-table"><thead><tr><th>組合</th><th>標題</th><th>內文</th><th>CTA 選項</th><th>圖片場景</th></tr></thead><tbody>';
   data.combinations.forEach(function(r){
     html+='<tr><td>'+esc(r.name)+'</td><td>'+esc(r.headline)+'</td><td>'+esc(r.body.substring(0,50))+(r.body.length>50?'...':'')+'</td><td>'+esc(r.cta)+'</td><td>'+esc(r.imageScene)+'</td></tr>';
   });
@@ -1177,7 +1225,7 @@ function exportClipboard() {
   if (d.combinations.length===0&&d.copies.length===0) { alert('沒有可匯出的資料。'); return; }
   var t = '=== AI 廣告素材 ===\n\n';
   t += '【文案】\n';
-  d.copies.forEach(function(c,i){t+='#'+(i+1)+' ['+c.style+']\n標題：'+c.headline+'\n內文：'+c.body+'\nCTA：'+c.cta+'\n\n';});
+  d.copies.forEach(function(c,i){t+='#'+(i+1)+' ['+c.funnel+' / '+c.style+']\n標題：'+c.headline+'\n內文：'+c.body+'\nCTA 選項：'+c.cta+'\n\n';});
   t += '【圖片 Prompt】\n';
   d.imagePrompts.forEach(function(p,i){t+='#'+(i+1)+' '+p.scene_description+'\n'+p.prompt_en+'\n('+p.suggested_platform+', '+p.aspect_ratio+')\n\n';});
   if (d.combinations.length>0) {
@@ -1190,10 +1238,10 @@ function exportClipboard() {
 function exportCSV() {
   var d = getExportData();
   if (d.copies.length===0) { alert('沒有可匯出的資料。'); return; }
-  var rows = [['類型','編號','標題/場景','內文/英文Prompt','CTA/建議平台','風格/比例']];
-  d.copies.forEach(function(c,i){rows.push(['文案',i+1,c.headline,c.body,c.cta,c.style]);});
+  var rows = [['類型','編號','漏斗階段','標題/場景','內文/英文Prompt','CTA選項/建議平台','風格/比例']];
+  d.copies.forEach(function(c,i){rows.push(['文案',i+1,c.funnel,c.headline,c.body,c.cta,c.style]);});
   d.imagePrompts.forEach(function(p,i){rows.push(['圖片Prompt',i+1,p.scene_description,p.prompt_en,p.suggested_platform,p.aspect_ratio]);});
-  d.combinations.forEach(function(c){rows.push(['組合',c.name,c.headline,c.imageScene,c.cta,'']);});
+  d.combinations.forEach(function(c){rows.push(['組合',c.name,'',c.headline,c.imageScene,c.cta,'']);});
   var csv = rows.map(function(r){return r.map(function(v){return '"'+(v+'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
   var a = document.createElement('a');
