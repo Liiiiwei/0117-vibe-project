@@ -529,10 +529,12 @@ body {
       <div id="style-tip" class="ai-suggestion" style="display:none"></div>
       <div class="form-actions">
         <button class="btn btn-primary btn-large" id="gen-copy">生成文案</button>
+        <button class="btn btn-danger" id="clear-copies" style="display:none">清除全部文案</button>
       </div>
       <div id="copy-loading" class="loading" style="display:none">
         <div class="spinner"></div><p>AI 正在生成文案，請稍候...</p>
       </div>
+      <div id="copy-count-info" class="status-msg info" style="display:none"></div>
     </div>
     <div id="copy-results" class="results-grid" style="display:none"></div>
     <div class="section-footer">
@@ -855,15 +857,18 @@ function initCopy() {
       var btn = document.getElementById('gen-copy');
       btn.disabled=true;
       document.getElementById('copy-loading').style.display='block';
-      document.getElementById('copy-results').style.display='none';
+
+      var batchId = 'batch'+Date.now();
 
       google.script.run
         .withSuccessHandler(function(r) {
           try {
             var arr = parseJson(r);
-            S.copies = arr.map(function(c,i){
-              return {id:'c'+Date.now()+'-'+i, headline:c.headline, body:c.body, cta:c.call_to_action, style:style};
+            var newCopies = arr.map(function(c,i){
+              return {id:'c'+Date.now()+'-'+i, headline:c.headline, body:c.body, cta:c.call_to_action, style:style, batchId:batchId};
             });
+            // Accumulate: append new copies to existing ones
+            S.copies = S.copies.concat(newCopies);
             renderCopies();
             markDone('sec-copy');
           } catch(e) { alert('AI 回傳格式錯誤，請重試。\n'+e.message); }
@@ -878,21 +883,58 @@ function initCopy() {
         .generateAdCopy(S.provider, S.apiKey, proj, style, count);
     });
   };
+
+  document.getElementById('clear-copies').onclick = function() {
+    if (confirm('確定要清除所有已生成的文案嗎？')) {
+      S.copies = [];
+      renderCopies();
+    }
+  };
 }
 
 var STYLE_LABELS = {professional:'專業可靠',humorous:'幽默輕鬆',urgent:'緊迫限時',question:'提問引導','pain-point':'痛點解決',storytelling:'故事敘述',emotional:'情感訴求'};
 
 function renderCopies() {
-  var c = document.getElementById('copy-results');
-  c.style.display='grid';
-  c.innerHTML = S.copies.map(function(cp,i){
-    return '<div class="copy-card"><div class="copy-card-header"><span class="badge">'
-      +(STYLE_LABELS[cp.style]||cp.style)+' #'+(i+1)+'</span>'
-      +'<button class="btn btn-secondary btn-sm" onclick="copyText(\''+cp.id+'\')">複製</button></div>'
-      +'<h4>'+esc(cp.headline)+'</h4>'
-      +'<div class="body-text">'+esc(cp.body)+'</div>'
-      +'<div class="cta-text">'+esc(cp.cta)+'</div></div>';
+  var container = document.getElementById('copy-results');
+  var clearBtn = document.getElementById('clear-copies');
+  var infoEl = document.getElementById('copy-count-info');
+
+  if (S.copies.length === 0) {
+    container.style.display = 'none';
+    clearBtn.style.display = 'none';
+    infoEl.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'grid';
+  clearBtn.style.display = 'inline-flex';
+
+  // Count by style
+  var styleCounts = {};
+  S.copies.forEach(function(cp) {
+    var label = STYLE_LABELS[cp.style] || cp.style;
+    styleCounts[label] = (styleCounts[label] || 0) + 1;
+  });
+  var summary = Object.keys(styleCounts).map(function(k) { return k + ' ' + styleCounts[k] + ' 組'; }).join('、');
+  infoEl.innerHTML = '已累積 <strong>' + S.copies.length + '</strong> 組文案（' + summary + '）';
+  infoEl.style.display = 'block';
+
+  container.innerHTML = S.copies.map(function(cp, i) {
+    return '<div class="copy-card" id="card-'+cp.id+'"><div class="copy-card-header"><span class="badge">'
+      + (STYLE_LABELS[cp.style] || cp.style) + ' #' + (i + 1) + '</span>'
+      + '<div style="display:flex;gap:0.3rem">'
+      + '<button class="btn btn-secondary btn-sm" onclick="copyText(\'' + cp.id + '\')">複製</button>'
+      + '<button class="btn btn-danger btn-sm" onclick="removeCopy(\'' + cp.id + '\')" title="刪除此文案">✕</button>'
+      + '</div></div>'
+      + '<h4>' + esc(cp.headline) + '</h4>'
+      + '<div class="body-text">' + esc(cp.body) + '</div>'
+      + '<div class="cta-text">' + esc(cp.cta) + '</div></div>';
   }).join('');
+}
+
+function removeCopy(id) {
+  S.copies = S.copies.filter(function(c) { return c.id !== id; });
+  renderCopies();
 }
 
 function copyText(id) {
