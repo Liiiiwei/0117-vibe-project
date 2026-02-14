@@ -2,6 +2,8 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 廣告素材產生器</title>
   <style>
 /* === Variables === */
 :root {
@@ -218,7 +220,8 @@ body {
 .combo-section h5 { font-size: 0.78rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--text-secondary); }
 .combo-section select { width: 100%; padding: 0.4rem; font-size: 0.8rem; border: 1px solid var(--border); border-radius: 4px; }
 .combo-section .preview { margin-top: 0.4rem; font-size: 0.78rem; color: var(--text-secondary); line-height: 1.5; }
-.empty-hint { color: var(--text-light); font-size: 0.83rem; text-align: center; padding: 0.8rem; }
+.empty-hint { color: var(--text-light); font-size: 0.83rem; text-align: center; padding: 1.5rem 0.8rem; }
+.empty-hint::before { content: ''; display: block; font-size: 1.8rem; margin-bottom: 0.4rem; opacity: 0.4; }
 
 /* Export */
 .export-options { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.25rem; }
@@ -287,15 +290,48 @@ body {
 .faq-item h4 { color: var(--text); margin-bottom: 0.3rem; font-size: 0.88rem; }
 .faq-item p { font-size: 0.83rem; color: var(--text-secondary); }
 
+/* Transitions */
+.btn { transition: background 0.15s, box-shadow 0.15s, opacity 0.15s; }
+.copy-card, .prompt-card, .combo-card { transition: box-shadow 0.2s, transform 0.2s; }
+.copy-card:hover, .prompt-card:hover, .combo-card:hover { transform: translateY(-2px); }
+.step-item { transition: color 0.15s, background 0.15s, border-color 0.15s; }
+.form-group input, .form-group textarea, .form-group select { transition: border-color 0.15s, box-shadow 0.15s; }
+
+/* Toast Notification */
+.toast-container {
+  position: fixed; top: 1rem; right: 1rem; z-index: 2000;
+  display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  padding: 0.7rem 1.1rem; border-radius: var(--radius); font-size: 0.85rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: toastIn 0.3s ease;
+  display: flex; align-items: center; gap: 0.5rem; max-width: 360px;
+}
+.toast.success { background: #065F46; color: #fff; }
+.toast.error { background: #991B1B; color: #fff; }
+.toast.info { background: var(--primary); color: #fff; }
+.toast.warning { background: #92400E; color: #fff; }
+.toast.hide { animation: toastOut 0.3s ease forwards; }
+@keyframes toastIn { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }
+@keyframes toastOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(40px); } }
+
 /* Footer */
 .app-footer { text-align: center; padding: 1.2rem; color: var(--text-light); font-size: 0.78rem; border-top: 1px solid var(--border); margin-top: 1.5rem; }
+
+/* Focus styles for accessibility */
+.btn:focus-visible, .form-group input:focus-visible, .form-group textarea:focus-visible, .form-group select:focus-visible {
+  outline: 2px solid var(--primary); outline-offset: 2px;
+}
+.step-item:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
 
 /* Responsive */
 @media (max-width: 768px) {
   .app-header { padding: 0.9rem; }
   .app-header h1 { font-size: 1.15rem; }
-  .step-item { padding: 0.6rem 0.5rem; }
-  .step-label { display: none; }
+  .step-nav { gap: 0; }
+  .step-item { padding: 0.6rem 0.5rem; flex-direction: column; gap: 0.15rem; }
+  .step-label { font-size: 0.65rem; display: block; }
   .app-main { padding: 0.9rem; }
   .form-row { grid-template-columns: 1fr; }
   .combo-workspace { grid-template-columns: 1fr; }
@@ -303,6 +339,8 @@ body {
   .combo-content { grid-template-columns: 1fr; }
   .section-footer { flex-direction: column; gap: 0.6rem; }
   .section-footer .btn { width: 100%; }
+  .toast-container { left: 1rem; right: 1rem; }
+  .toast { max-width: 100%; }
 }
   </style>
 </head>
@@ -415,13 +453,13 @@ body {
 </header>
 
 <!-- ========== Step Nav ========== -->
-<nav class="step-nav">
-  <div class="step-item active" data-section="sec-api"><span class="step-num">1</span><span class="step-label">API 設定</span></div>
-  <div class="step-item" data-section="sec-project"><span class="step-num">2</span><span class="step-label">專案設定</span></div>
-  <div class="step-item" data-section="sec-copy"><span class="step-num">3</span><span class="step-label">文案生成</span></div>
-  <div class="step-item" data-section="sec-image"><span class="step-num">4</span><span class="step-label">圖片 Prompt</span></div>
-  <div class="step-item" data-section="sec-combo"><span class="step-num">5</span><span class="step-label">素材組合</span></div>
-  <div class="step-item" data-section="sec-export"><span class="step-num">6</span><span class="step-label">匯出結果</span></div>
+<nav class="step-nav" role="tablist">
+  <div class="step-item active" data-section="sec-api" role="tab" tabindex="0"><span class="step-num">1</span><span class="step-label">API 設定</span></div>
+  <div class="step-item" data-section="sec-project" role="tab" tabindex="0"><span class="step-num">2</span><span class="step-label">專案設定</span></div>
+  <div class="step-item" data-section="sec-copy" role="tab" tabindex="0"><span class="step-num">3</span><span class="step-label">文案生成</span></div>
+  <div class="step-item" data-section="sec-image" role="tab" tabindex="0"><span class="step-num">4</span><span class="step-label">圖片 Prompt</span></div>
+  <div class="step-item" data-section="sec-combo" role="tab" tabindex="0"><span class="step-num">5</span><span class="step-label">素材組合</span></div>
+  <div class="step-item" data-section="sec-export" role="tab" tabindex="0"><span class="step-num">6</span><span class="step-label">匯出結果</span></div>
 </nav>
 
 <!-- ========== Main ========== -->
@@ -692,6 +730,7 @@ body {
 </main>
 
 <footer class="app-footer">AI 廣告素材產生器 &copy; 2026 | 由 AI 驅動的廣告素材製作工具</footer>
+<div class="toast-container" id="toast-container"></div>
 
 <script>
 // ============================================================
@@ -728,6 +767,9 @@ document.addEventListener('DOMContentLoaded', function() {
 function initNav() {
   document.querySelectorAll('.step-item').forEach(function(el) {
     el.addEventListener('click', function() { goTo(el.dataset.section); });
+    el.addEventListener('keydown', function(e) {
+      if (e.key==='Enter'||e.key===' ') { e.preventDefault(); goTo(el.dataset.section); }
+    });
   });
 }
 
@@ -751,6 +793,8 @@ function markDone(id) {
 // ============================================================
 function initOnboarding() {
   var modal = document.getElementById('onboarding-modal');
+  // Skip if user already dismissed onboarding
+  try { if (localStorage.getItem('ob_done')) { modal.style.display='none'; return; } } catch(e){}
   var cur = 0, steps = modal.querySelectorAll('.ob-step'), dots = modal.querySelectorAll('.dot');
   function show(i) {
     steps.forEach(function(s){s.classList.remove('active')});
@@ -762,7 +806,10 @@ function initOnboarding() {
   }
   document.getElementById('ob-prev').onclick = function(){if(cur>0){cur--;show(cur);}};
   document.getElementById('ob-next').onclick = function(){if(cur<steps.length-1){cur++;show(cur);}};
-  document.getElementById('ob-close').onclick = function(){modal.style.display='none';};
+  document.getElementById('ob-close').onclick = function(){
+    modal.style.display='none';
+    try { localStorage.setItem('ob_done','1'); } catch(e){}
+  };
   dots.forEach(function(d,i){d.onclick=function(){cur=i;show(i);};});
   show(0);
 }
@@ -838,7 +885,7 @@ function initProject() {
   document.getElementById('gen-persona').onclick = function() {
     var desc = document.getElementById('product-desc').value.trim();
     var aud = document.getElementById('audience').value.trim();
-    if (!aud) { alert('請先輸入目標受眾描述。'); return; }
+    if (!aud) { toast('請先輸入目標受眾描述。','warning'); return; }
 
     var btn = document.getElementById('gen-persona');
     btn.disabled = true; btn.textContent = '生成中...';
@@ -852,7 +899,7 @@ function initProject() {
           btn.disabled=false; btn.textContent='AI 生成受眾畫像';
         })
         .withFailureHandler(function(e) {
-          alert('生成失敗：'+e.message);
+          toast('生成失敗：'+e.message,'error');
           btn.disabled=false; btn.textContent='AI 生成受眾畫像';
         })
         .generatePersona(S.provider, S.apiKey, desc, aud);
@@ -907,7 +954,7 @@ function initCopy() {
   document.getElementById('gen-copy').onclick = function() {
     var proj = getProjectData();
     if (!proj.productDescription||!proj.adGoal||!proj.targetAudience) {
-      alert('請先完成專案設定（產品描述、廣告目標、目標受眾為必填）。'); return;
+      toast('請先完成專案設定（產品描述、廣告目標、目標受眾為必填）。','warning'); return;
     }
     ensureApiKey(function() {
       var style = document.getElementById('copy-style').value;
@@ -933,12 +980,12 @@ function initCopy() {
             S.copies = S.copies.concat(newCopies);
             renderCopies();
             markDone('sec-copy');
-          } catch(e) { alert('AI 回傳格式錯誤，請重試。\n'+e.message); }
+          } catch(e) { toast('AI 回傳格式錯誤，請重試。','error'); }
           btn.disabled=false;
           document.getElementById('copy-loading').style.display='none';
         })
         .withFailureHandler(function(e) {
-          alert('文案生成失敗：'+e.message);
+          toast('文案生成失敗：'+e.message,'error');
           btn.disabled=false;
           document.getElementById('copy-loading').style.display='none';
         })
@@ -1025,7 +1072,7 @@ function copyText(id) {
 function initImage() {
   document.getElementById('gen-img-prompt').onclick = function() {
     var proj = getProjectData();
-    if (!proj.productDescription) { alert('請先填寫產品描述。'); return; }
+    if (!proj.productDescription) { toast('請先填寫產品描述。','warning'); return; }
     ensureApiKey(function() {
       var style = document.getElementById('img-style').value;
       var count = parseInt(document.getElementById('img-count').value);
@@ -1051,12 +1098,12 @@ function initImage() {
             });
             renderImgPrompts();
             markDone('sec-image');
-          } catch(e) { alert('AI 回傳格式錯誤，請重試。\n'+e.message); }
+          } catch(e) { toast('AI 回傳格式錯誤，請重試。','error'); }
           btn.disabled=false;
           document.getElementById('img-loading').style.display='none';
         })
         .withFailureHandler(function(e) {
-          alert('圖片 Prompt 生成失敗：'+e.message);
+          toast('圖片 Prompt 生成失敗：'+e.message,'error');
           btn.disabled=false;
           document.getElementById('img-loading').style.display='none';
         })
@@ -1120,7 +1167,7 @@ function addCombo() {
 }
 
 function autoCombo() {
-  if (S.copies.length===0||S.imgPrompts.length===0) { alert('請先生成文案和圖片 Prompt。'); return; }
+  if (S.copies.length===0||S.imgPrompts.length===0) { toast('請先生成文案和圖片 Prompt。','warning'); return; }
   S.combos=[]; S.nextCombo=1;
   var cnt=0, max=Math.min(S.copies.length*S.imgPrompts.length,12);
   for (var ci=0;ci<S.copies.length;ci++) {
@@ -1184,7 +1231,7 @@ function initExport() {
   document.getElementById('exp-sheets').onclick = function() { exportSheets(null); };
   document.getElementById('exp-sheets-existing').onclick = function() {
     var id = document.getElementById('sheet-id').value.trim();
-    if (!id) { alert('請輸入 Google Sheet ID。'); return; }
+    if (!id) { toast('請輸入 Google Sheet ID。','warning'); return; }
     exportSheets(id);
   };
 }
@@ -1222,7 +1269,7 @@ function refreshExportPreview() {
 
 function exportClipboard() {
   var d = getExportData();
-  if (d.combinations.length===0&&d.copies.length===0) { alert('沒有可匯出的資料。'); return; }
+  if (d.combinations.length===0&&d.copies.length===0) { toast('沒有可匯出的資料。','warning'); return; }
   var t = '=== AI 廣告素材 ===\n\n';
   t += '【文案】\n';
   d.copies.forEach(function(c,i){t+='#'+(i+1)+' ['+c.funnel+' / '+c.style+']\n標題：'+c.headline+'\n內文：'+c.body+'\nCTA 選項：'+c.cta+'\n\n';});
@@ -1237,7 +1284,7 @@ function exportClipboard() {
 
 function exportCSV() {
   var d = getExportData();
-  if (d.copies.length===0) { alert('沒有可匯出的資料。'); return; }
+  if (d.copies.length===0) { toast('沒有可匯出的資料。','warning'); return; }
   var rows = [['類型','編號','漏斗階段','標題/場景','內文/英文Prompt','CTA選項/建議平台','風格/比例']];
   d.copies.forEach(function(c,i){rows.push(['文案',i+1,c.funnel,c.headline,c.body,c.cta,c.style]);});
   d.imagePrompts.forEach(function(p,i){rows.push(['圖片Prompt',i+1,p.scene_description,p.prompt_en,p.suggested_platform,p.aspect_ratio]);});
@@ -1248,19 +1295,34 @@ function exportCSV() {
   a.href = URL.createObjectURL(blob);
   a.download = 'ad-creatives-'+new Date().toISOString().slice(0,10)+'.csv';
   a.click();
-  showMsg('export-status','success','CSV 已下載！');
+  toast('CSV 已下載！','success');
+}
+
+function setExportLoading(btnId, loading) {
+  var btn = document.getElementById(btnId);
+  if (!btn) return;
+  if (loading) {
+    btn.disabled = true;
+    btn.dataset.origText = btn.textContent;
+    btn.textContent = '處理中...';
+  } else {
+    btn.disabled = false;
+    btn.textContent = btn.dataset.origText || btn.textContent;
+  }
 }
 
 function exportSheets(existingId) {
   var d = getExportData();
-  if (d.copies.length===0&&d.imagePrompts.length===0) { alert('沒有可匯出的資料。'); return; }
+  if (d.copies.length===0&&d.imagePrompts.length===0) { toast('沒有可匯出的資料。','warning'); return; }
 
+  var btnId = existingId ? 'exp-sheets-existing' : 'exp-sheets';
+  setExportLoading(btnId, true);
   showMsg('export-status','info','正在寫入 Google Sheets...');
 
   if (existingId) {
     google.script.run
-      .withSuccessHandler(function(r){showMsg('export-status',r.success?'success':'error',r.message);})
-      .withFailureHandler(function(e){showMsg('export-status','error','寫入失敗：'+e.message);})
+      .withSuccessHandler(function(r){showMsg('export-status',r.success?'success':'error',r.message);setExportLoading(btnId,false);})
+      .withFailureHandler(function(e){showMsg('export-status','error','寫入失敗：'+e.message);setExportLoading(btnId,false);})
       .exportToGoogleSheet(existingId, d);
   } else {
     google.script.run
@@ -1274,12 +1336,13 @@ function exportSheets(existingId) {
               } else {
                 showMsg('export-status','error',r2.message);
               }
+              setExportLoading(btnId,false);
             })
-            .withFailureHandler(function(e){showMsg('export-status','error',e.message);})
+            .withFailureHandler(function(e){showMsg('export-status','error',e.message);setExportLoading(btnId,false);})
             .exportToGoogleSheet(r.sheetId, d);
-        } else { showMsg('export-status','error',r.message); }
+        } else { showMsg('export-status','error',r.message); setExportLoading(btnId,false); }
       })
-      .withFailureHandler(function(e){showMsg('export-status','error','建立失敗：'+e.message);})
+      .withFailureHandler(function(e){showMsg('export-status','error','建立失敗：'+e.message);setExportLoading(btnId,false);})
       .createNewSheet();
   }
 }
@@ -1312,7 +1375,7 @@ function ensureApiKey(cb) {
     S.apiKey = document.getElementById('api-key').value.trim();
     S.provider = document.getElementById('ai-provider').value;
   }
-  if (!S.apiKey) { alert('請先至「API 設定」步驟輸入 API Key。'); return; }
+  if (!S.apiKey) { toast('請先至「API 設定」步驟輸入 API Key。','warning'); return; }
   cb();
 }
 
@@ -1342,12 +1405,24 @@ function parseJson(text) {
 
 function copyToClipboard(text) {
   if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(function(){alert('已複製到剪貼簿！');});
+    navigator.clipboard.writeText(text).then(function(){toast('已複製到剪貼簿！','success');});
   } else {
     var ta = document.createElement('textarea'); ta.value=text;
     document.body.appendChild(ta); ta.select(); document.execCommand('copy');
-    document.body.removeChild(ta); alert('已複製到剪貼簿！');
+    document.body.removeChild(ta); toast('已複製到剪貼簿！','success');
   }
+}
+
+function toast(msg, type) {
+  type = type || 'info';
+  var icons = {success:'&#10003;', error:'&#10007;', info:'&#8505;', warning:'&#9888;'};
+  var el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = '<span>' + (icons[type]||'') + '</span><span>' + esc(msg) + '</span>';
+  var container = document.getElementById('toast-container');
+  container.appendChild(el);
+  setTimeout(function(){ el.classList.add('hide'); }, 2500);
+  setTimeout(function(){ if (el.parentNode) el.parentNode.removeChild(el); }, 2800);
 }
 </script>
 
