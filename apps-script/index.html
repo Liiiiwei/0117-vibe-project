@@ -562,14 +562,26 @@ body {
       <p>根據專案設定，AI 自動生成多組廣告文案。</p>
     </div>
     <div class="card">
-      <div class="form-group">
-        <label for="funnel-stage">漏斗階段</label>
-        <select id="funnel-stage">
-          <option value="tofu">上層 (TOFU) — 認知：讓陌生受眾認識你</option>
-          <option value="mofu">中層 (MOFU) — 考慮：讓有興趣的人深入了解</option>
-          <option value="bofu">下層 (BOFU) — 轉化：推動已考慮的人立即行動</option>
-        </select>
-        <div id="funnel-tip" class="ai-suggestion" style="display:none"></div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="funnel-stage">漏斗階段</label>
+          <select id="funnel-stage">
+            <option value="tofu">上層 (TOFU) — 認知：讓陌生受眾認識你</option>
+            <option value="mofu">中層 (MOFU) — 考慮：讓有興趣的人深入了解</option>
+            <option value="bofu">下層 (BOFU) — 轉化：推動已考慮的人立即行動</option>
+          </select>
+          <div id="funnel-tip" class="ai-suggestion" style="display:none"></div>
+        </div>
+        <div class="form-group">
+          <label for="ad-platform">投放平台</label>
+          <select id="ad-platform">
+            <option value="general">通用（不限平台）</option>
+            <option value="facebook">Facebook</option>
+            <option value="instagram">Instagram</option>
+            <option value="google-ads">Google Ads</option>
+            <option value="line">LINE 廣告</option>
+          </select>
+        </div>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -583,7 +595,22 @@ body {
             <option value="storytelling">故事敘述</option>
             <option value="emotional">情感訴求</option>
           </select>
+          <div id="style-recommendation" style="display:none;font-size:0.75rem;margin-top:0.2rem;"></div>
         </div>
+        <div class="form-group">
+          <label for="hook-angle">切角方向</label>
+          <select id="hook-angle">
+            <option value="auto">自動分配（AI 決定最佳切角）</option>
+            <option value="price">價格/優惠導向</option>
+            <option value="quality">品質/功能導向</option>
+            <option value="social-proof">社會證明導向</option>
+            <option value="emotion">情感共鳴導向</option>
+            <option value="scarcity">稀缺性導向</option>
+            <option value="problem-solution">問題解決導向</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
         <div class="form-group">
           <label for="copy-count">生成組數</label>
           <select id="copy-count">
@@ -591,6 +618,8 @@ body {
             <option value="5" selected>5 組</option>
             <option value="8">8 組</option>
           </select>
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end;">
         </div>
       </div>
       <div id="style-tip" class="ai-suggestion" style="display:none"></div>
@@ -641,6 +670,12 @@ body {
       <div class="form-group">
         <label for="img-desc">補充描述（選填）</label>
         <textarea id="img-desc" rows="2" placeholder="描述期望的場景、元素、色調等，讓 Prompt 更精準..."></textarea>
+      </div>
+      <div class="form-group" id="img-align-group" style="display:none">
+        <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-weight:400">
+          <input type="checkbox" id="img-align-copy" checked>
+          <span>參考已生成文案的風格方向（讓圖片與文案調性一致）</span>
+        </label>
       </div>
       <div class="form-actions">
         <button class="btn btn-primary btn-large" id="gen-img-prompt">生成圖片 Prompt</button>
@@ -780,6 +815,7 @@ function goTo(id) {
   document.querySelector('[data-section="'+id+'"]').classList.add('active');
   if (id === 'sec-combo') refreshComboSidebar();
   if (id === 'sec-export') refreshExportPreview();
+  if (id === 'sec-image') { var g=document.getElementById('img-align-group'); if(g) g.style.display=S.copies.length>0?'block':'none'; }
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -902,7 +938,7 @@ function initProject() {
           toast('生成失敗：'+e.message,'error');
           btn.disabled=false; btn.textContent='AI 生成受眾畫像';
         })
-        .generatePersona(S.provider, S.apiKey, desc, aud);
+        .generatePersona(S.provider, S.apiKey, desc, aud, document.getElementById('industry').value);
     });
   };
 }
@@ -924,6 +960,31 @@ function getProjectData() {
 // ============================================================
 var FUNNEL_LABELS = {tofu:'上層(認知)',mofu:'中層(考慮)',bofu:'下層(轉化)'};
 
+// 風格 × 漏斗匹配矩陣
+var FUNNEL_STYLE_MATRIX = {
+  tofu: { recommended: ['question','storytelling','emotional','humorous'], discouraged: ['urgent'] },
+  mofu: { recommended: ['professional','pain-point','storytelling'], discouraged: ['urgent'] },
+  bofu: { recommended: ['urgent','pain-point','professional'], discouraged: ['storytelling','humorous'] }
+};
+
+function updateStyleRecommendation() {
+  var funnel = document.getElementById('funnel-stage').value;
+  var style = document.getElementById('copy-style').value;
+  var matrix = FUNNEL_STYLE_MATRIX[funnel];
+  var el = document.getElementById('style-recommendation');
+  if (!matrix) { el.style.display='none'; return; }
+  if (matrix.discouraged && matrix.discouraged.indexOf(style) >= 0) {
+    el.style.display='block'; el.style.color='#DC2626';
+    el.textContent = '&#9888; 此風格在「' + FUNNEL_LABELS[funnel] + '」階段效果可能較差';
+    el.innerHTML = '&#9888; 此風格在「' + FUNNEL_LABELS[funnel] + '」階段效果可能較差';
+  } else if (matrix.recommended && matrix.recommended.indexOf(style) >= 0) {
+    el.style.display='block'; el.style.color='#059669';
+    el.innerHTML = '&#10003; 推薦組合！此風格很適合「' + FUNNEL_LABELS[funnel] + '」階段';
+  } else {
+    el.style.display='none';
+  }
+}
+
 function initCopy() {
   document.getElementById('funnel-stage').onchange = function() {
     var tips = {
@@ -934,6 +995,7 @@ function initCopy() {
     var div = document.getElementById('funnel-tip');
     if (tips[this.value]) { div.innerHTML=tips[this.value]; div.style.display='block'; }
     else { div.style.display='none'; }
+    updateStyleRecommendation();
   };
 
   document.getElementById('copy-style').onchange = function() {
@@ -949,6 +1011,7 @@ function initCopy() {
     var v = this.value, div = document.getElementById('style-tip');
     if (tips[v]) { div.innerHTML='<strong>風格提示：</strong>'+tips[v]; div.style.display='block'; }
     else { div.style.display='none'; }
+    updateStyleRecommendation();
   };
 
   document.getElementById('gen-copy').onclick = function() {
@@ -960,9 +1023,14 @@ function initCopy() {
       var style = document.getElementById('copy-style').value;
       var count = parseInt(document.getElementById('copy-count').value);
       var funnel = document.getElementById('funnel-stage').value;
+      var hookAngle = document.getElementById('hook-angle').value;
+      var adPlatform = document.getElementById('ad-platform').value;
       var btn = document.getElementById('gen-copy');
       btn.disabled=true;
       document.getElementById('copy-loading').style.display='block';
+
+      // 去重：收集已生成文案標題
+      var existingHeadlines = S.copies.map(function(c) { return c.headline; });
 
       var batchId = 'batch'+Date.now();
 
@@ -989,7 +1057,7 @@ function initCopy() {
           btn.disabled=false;
           document.getElementById('copy-loading').style.display='none';
         })
-        .generateAdCopy(S.provider, S.apiKey, proj, style, count, funnel);
+        .generateAdCopy(S.provider, S.apiKey, proj, style, count, funnel, hookAngle, adPlatform, existingHeadlines);
     });
   };
 
@@ -1070,6 +1138,12 @@ function copyText(id) {
 // Image Prompt Generation
 // ============================================================
 function initImage() {
+  // Show/hide copy alignment option based on whether copies exist
+  function updateAlignGroup() {
+    var g = document.getElementById('img-align-group');
+    if (g) g.style.display = S.copies.length > 0 ? 'block' : 'none';
+  }
+
   document.getElementById('gen-img-prompt').onclick = function() {
     var proj = getProjectData();
     if (!proj.productDescription) { toast('請先填寫產品描述。','warning'); return; }
@@ -1081,6 +1155,13 @@ function initImage() {
       btn.disabled=true;
       document.getElementById('img-loading').style.display='block';
       document.getElementById('img-results').style.display='none';
+
+      // 文案對齊：如果勾選且有文案，傳入文案上下文
+      var copyContext = null;
+      var alignCheck = document.getElementById('img-align-copy');
+      if (alignCheck && alignCheck.checked && S.copies.length > 0) {
+        copyContext = S.copies.map(function(c) { return { headline: c.headline, funnel: c.funnel }; });
+      }
 
       google.script.run
         .withSuccessHandler(function(r) {
@@ -1107,7 +1188,7 @@ function initImage() {
           btn.disabled=false;
           document.getElementById('img-loading').style.display='none';
         })
-        .generateImagePrompts(S.provider, S.apiKey, proj, style, desc, count);
+        .generateImagePrompts(S.provider, S.apiKey, proj, style, desc, count, copyContext);
     });
   };
 }
