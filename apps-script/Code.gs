@@ -393,7 +393,7 @@ function generateImagePrompts(provider, apiKey, projectData, imageStyle, descrip
       + '\n請確保圖片的情緒氛圍和場景設定能搭配上述文案使用。\n';
   }
 
-  var prompt = '你是一位專業的廣告視覺設計總監，擅長撰寫 AI 圖像生成 Prompt。\n\n'
+  var prompt = '你是一位專業的廣告視覺設計總監兼平面排版專家，擅長撰寫 AI 圖像生成 Prompt，並且精通廣告版面中的文字編排設計。\n\n'
     + '請根據以下資訊，生成 ' + count + ' 組可直接用於 Midjourney / DALL-E / Stable Diffusion 的圖片生成 Prompt。\n\n'
     + '產品名稱：' + projectData.productName + '\n'
     + '產品描述：' + projectData.productDescription + '\n'
@@ -401,14 +401,19 @@ function generateImagePrompts(provider, apiKey, projectData, imageStyle, descrip
     + '期望風格：' + (styleNames[imageStyle] || imageStyle) + '\n'
     + '補充描述：' + (description || '無') + '\n'
     + copyAlignPrompt + '\n'
+    + '【重要 — 文字排版設計要求】\n'
+    + '每組 Prompt 的圖片必須是「廣告完稿概念圖」，需包含文字排版區域的設計：\n'
+    + '- 圖片中要預留明確的文字放置區域（如上方 1/3、左側欄、底部色帶等）\n'
+    + '- 在 prompt_en 中指定文字區域的處理方式（如 "with large clean area at top for text overlay"、"with bold title space"）\n'
+    + '- 思考標題、副標題、CTA 按鈕在畫面中的位置佈局\n\n'
     + '每組 Prompt 必須包含：\n'
-    + '1. prompt_en：英文 Prompt（80-120 字），包含場景、構圖、色調、光線、元素、風格關鍵字\n'
+    + '1. prompt_en：英文 Prompt（80-150 字），包含場景、構圖、色調、光線、元素、風格關鍵字，並明確指定文字排版區域\n'
     + '2. prompt_zh：上述 Prompt 的繁體中文翻譯/說明\n'
     + '3. scene_description：場景簡述（繁體中文，20 字內）\n'
-    + '4. suggested_platform：建議使用的圖片生成平台（Midjourney / DALL-E / Stable Diffusion）\n'
-    + '5. aspect_ratio：建議的圖片比例（如 1:1, 16:9, 9:16, 4:5）\n\n'
+    + '4. text_layout：文字排版建議（繁體中文），說明標題、副標、CTA 的建議位置和排版方式（例如：「標題置頂靠左，大字粗體白色；副標在標題下方，小字淺灰；CTA 按鈕置底居中」）\n'
+    + '5. aspect_ratio：圖片比例，僅限以下三種之一：1:1（正方形，適合 IG/FB 貼文）、4:5（直式，適合 IG/FB 動態）、9:16（全螢幕直式，適合限動/Reels）\n\n'
     + '請以 JSON 陣列格式回覆，例如：\n'
-    + '[{"prompt_en":"...","prompt_zh":"...","scene_description":"...","suggested_platform":"...","aspect_ratio":"..."}]\n\n'
+    + '[{"prompt_en":"...","prompt_zh":"...","scene_description":"...","text_layout":"...","aspect_ratio":"1:1"}]\n\n'
     + '請只回覆 JSON 陣列，不要包含其他文字或 markdown 標記。';
 
   var result = callTextAI(provider, apiKey, prompt);
@@ -451,14 +456,14 @@ function exportToGoogleSheet(sheetId, exportData) {
     sheet.getRange(promptStartRow, 1).setValue('【AI 生成圖片 Prompt】');
     sheet.getRange(promptStartRow, 1).setFontSize(14).setFontWeight('bold').setFontColor('#7C3AED');
 
-    var promptHeaders = ['編號', '場景', '英文 Prompt', '中文說明', '建議平台', '建議比例'];
+    var promptHeaders = ['編號', '場景', '英文 Prompt', '中文說明', '文字排版建議', '比例'];
     sheet.getRange(promptStartRow + 1, 1, 1, promptHeaders.length).setValues([promptHeaders]);
     sheet.getRange(promptStartRow + 1, 1, 1, promptHeaders.length)
       .setFontWeight('bold').setBackground('#7C3AED').setFontColor('#FFFFFF');
 
     if (exportData.imagePrompts && exportData.imagePrompts.length > 0) {
       var promptRows = exportData.imagePrompts.map(function(p, i) {
-        return [i + 1, p.scene_description || '', p.prompt_en || '', p.prompt_zh || '', p.suggested_platform || '', p.aspect_ratio || ''];
+        return [i + 1, p.scene_description || '', p.prompt_en || '', p.prompt_zh || '', p.text_layout || '', p.aspect_ratio || ''];
       });
       sheet.getRange(promptStartRow + 2, 1, promptRows.length, promptHeaders.length).setValues(promptRows);
     }

@@ -185,6 +185,12 @@ body {
   margin-bottom: 0.5rem; white-space: pre-wrap; line-height: 1.5; color: #334155;
 }
 .prompt-card .zh-desc { font-size: 0.83rem; color: var(--text-secondary); margin-bottom: 0.5rem; line-height: 1.6; }
+.prompt-card .text-layout {
+  background: linear-gradient(135deg, #EEF2FF, #F5F3FF); border: 1px solid #C7D2FE;
+  border-radius: var(--radius); padding: 0.6rem 0.8rem; margin-bottom: 0.5rem;
+  font-size: 0.82rem; line-height: 1.6; color: #3730A3;
+}
+.prompt-card .text-layout strong { display: block; font-size: 0.73rem; color: #6366F1; margin-bottom: 0.2rem; text-transform: uppercase; letter-spacing: 0.5px; }
 .prompt-card .meta { display: flex; gap: 1rem; font-size: 0.78rem; color: var(--text-light); }
 .meta-tag {
   display: inline-block; padding: 0.15rem 0.45rem; background: #F1F5F9;
@@ -776,7 +782,7 @@ var S = {
   apiKey: '',
   project: {},
   copies: [],    // {id, headline, body, cta, style}
-  imgPrompts: [], // {id, prompt_en, prompt_zh, scene_description, suggested_platform, aspect_ratio}
+  imgPrompts: [], // {id, prompt_en, prompt_zh, scene_description, text_layout, aspect_ratio}
   combos: [],    // {id, name, copyId, promptId}
   nextCombo: 1
 };
@@ -1173,7 +1179,7 @@ function initImage() {
                 prompt_en: p.prompt_en,
                 prompt_zh: p.prompt_zh,
                 scene_description: p.scene_description,
-                suggested_platform: p.suggested_platform,
+                text_layout: p.text_layout || '',
                 aspect_ratio: p.aspect_ratio
               };
             });
@@ -1197,16 +1203,18 @@ function renderImgPrompts() {
   var c = document.getElementById('img-results');
   c.style.display='grid';
   c.innerHTML = S.imgPrompts.map(function(p,i){
+    var layoutHtml = p.text_layout
+      ? '<div class="text-layout"><strong>文字排版建議</strong>'+esc(p.text_layout)+'</div>'
+      : '';
     return '<div class="prompt-card">'
-      +'<div class="prompt-card-header"><span class="badge">Prompt #'+(i+1)+'</span>'
+      +'<div class="prompt-card-header">'
+      +'<div style="display:flex;gap:0.3rem;align-items:center"><span class="badge">Prompt #'+(i+1)+'</span><span class="meta-tag">'+esc(p.aspect_ratio)+'</span></div>'
       +'<button class="btn btn-secondary btn-sm" onclick="copyPrompt(\''+p.id+'\')">複製 Prompt</button></div>'
       +'<div class="scene">'+esc(p.scene_description)+'</div>'
       +'<div class="en-prompt">'+esc(p.prompt_en)+'</div>'
       +'<div class="zh-desc">'+esc(p.prompt_zh)+'</div>'
-      +'<div class="meta">'
-      +'<span class="meta-tag">'+esc(p.suggested_platform)+'</span>'
-      +'<span class="meta-tag">比例 '+esc(p.aspect_ratio)+'</span>'
-      +'</div></div>';
+      +layoutHtml
+      +'</div>';
   }).join('');
 }
 
@@ -1355,7 +1363,7 @@ function exportClipboard() {
   t += '【文案】\n';
   d.copies.forEach(function(c,i){t+='#'+(i+1)+' ['+c.funnel+' / '+c.style+']\n標題：'+c.headline+'\n內文：'+c.body+'\nCTA 選項：'+c.cta+'\n\n';});
   t += '【圖片 Prompt】\n';
-  d.imagePrompts.forEach(function(p,i){t+='#'+(i+1)+' '+p.scene_description+'\n'+p.prompt_en+'\n('+p.suggested_platform+', '+p.aspect_ratio+')\n\n';});
+  d.imagePrompts.forEach(function(p,i){t+='#'+(i+1)+' '+p.scene_description+' ['+p.aspect_ratio+']\n'+p.prompt_en+'\n排版：'+(p.text_layout||'無')+'\n\n';});
   if (d.combinations.length>0) {
     t += '【素材組合】\n';
     d.combinations.forEach(function(c){t+=c.name+'：'+c.headline+' / '+c.imageScene+'\n';});
@@ -1366,9 +1374,9 @@ function exportClipboard() {
 function exportCSV() {
   var d = getExportData();
   if (d.copies.length===0) { toast('沒有可匯出的資料。','warning'); return; }
-  var rows = [['類型','編號','漏斗階段','標題/場景','內文/英文Prompt','CTA選項/建議平台','風格/比例']];
+  var rows = [['類型','編號','漏斗階段','標題/場景','內文/英文Prompt','CTA選項/文字排版','風格/比例']];
   d.copies.forEach(function(c,i){rows.push(['文案',i+1,c.funnel,c.headline,c.body,c.cta,c.style]);});
-  d.imagePrompts.forEach(function(p,i){rows.push(['圖片Prompt',i+1,p.scene_description,p.prompt_en,p.suggested_platform,p.aspect_ratio]);});
+  d.imagePrompts.forEach(function(p,i){rows.push(['圖片Prompt',i+1,'',p.scene_description,p.prompt_en,p.text_layout||'',p.aspect_ratio]);});
   d.combinations.forEach(function(c){rows.push(['組合',c.name,'',c.headline,c.imageScene,c.cta,'']);});
   var csv = rows.map(function(r){return r.map(function(v){return '"'+(v+'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
