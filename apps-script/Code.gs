@@ -455,13 +455,24 @@ function generateAdCopy(provider, apiKey, projectData, style, count, funnel, hoo
     + '核心賣點：' + projectData.keySellingPoints + '\n'
     + '文案風格：' + (styleMap[style] || style) + '\n\n'
     + dedupPrompt
-    + '\n每組文案必須包含：\n'
-    + '1. headline：標題，20 字以內，吸引眼球\n'
-    + '2. body：內文，50-100 字，說明產品價值\n'
-    + '3. call_to_action：提供 3 個不同方向的 CTA 選項（JSON 陣列），每個 5-10 字\n\n'
-    + '重要：每組文案之間切角要有明顯差異，不要重複類似的表達方式。\n\n'
-    + '請以 JSON 陣列格式回覆，例如：\n'
-    + '[{"headline":"...","body":"...","call_to_action":["CTA選項1","CTA選項2","CTA選項3"]}]\n\n'
+    + '\n每組文案必須包含以下結構（參考真實社群廣告文案格式）：\n'
+    + '1. hook：開場金句（1-2 句），用來製造停留，讓人想繼續讀。要有節奏感、情感或懸念。15-25 字。\n'
+    + '2. body：主內文（4-8 行），每行一個訊息點，有節奏地鋪陳。要包含：\n'
+    + '   - 價值主張或痛點描述（1-2 行）\n'
+    + '   - 產品/服務如何解決問題或帶來好處（1-2 行）\n'
+    + '   - 具體數據、規格或社會證明（1 行）\n'
+    + '   - 情感收尾或品牌溫度句（1 行）\n'
+    + '   每行建議 15-30 字。用換行分隔，不要寫成一大段。整體 120-200 字。\n'
+    + '3. offer_tag：優惠標籤（選填），例如「官網限定｜自選福袋」「期間限定｜全館免運」，10-20 字。如果沒有優惠活動可留空字串。\n'
+    + '4. offer_details：優惠明細（JSON 字串陣列），用項目符號列出具體優惠內容，例如 ["單一價格 NTD 3,188", "組合方式：外套×1＋上衣×2", "前 100 組加贈旅行包"]。沒有優惠則為空陣列 []。\n'
+    + '5. call_to_action：提供 3 個不同方向的 CTA 選項（JSON 字串陣列），每個 5-15 字\n\n'
+    + '【重要格式要求】\n'
+    + '- body 中的換行用 \\n 表示\n'
+    + '- 每組文案之間切角要有明顯差異，不要重複類似的表達方式\n'
+    + '- 文案風格要像真人社群小編寫的，不要像 AI 產出的制式文案\n'
+    + '- 可以適度使用符號（｜、→、・、！）增加排版節奏感\n\n'
+    + '請以 JSON 陣列格式回覆，範例：\n'
+    + '[{"hook":"自己的開運福袋，自己搭！","body":"不用抽、不用猜，自己挑選喜歡的單品。\\n從外套、上衣到褲款，多款選擇自由搭配，\\n總價值超過 NTD 9,000！\\n過年前，一次把日常穿搭整理完成，\\n新的一年，讓 plain-me 繼續陪伴你搭配美好的一天。","offer_tag":"官網限定｜自選福袋","offer_details":["單一價格 NTD 3,188","組合方式：外套 ×1＋上衣 ×2＋褲款 ×1","前 100 組加贈｜迷你旅行小包（價值 NTD 890）"],"call_to_action":["立即搭配福袋","前往官網選購","限量搶購中"]}]\n\n'
     + '請只回覆 JSON 陣列，不要包含其他文字或 markdown 標記。';
 
   var result = callTextAI(provider, apiKey, prompt);
@@ -539,14 +550,14 @@ function exportToGoogleSheet(sheetId, exportData) {
     sheet.getRange(1, 1).setValue('【AI 生成文案】');
     sheet.getRange(1, 1).setFontSize(14).setFontWeight('bold').setFontColor('#4F46E5');
 
-    var copyHeaders = ['編號', '漏斗階段', '風格', '標題', '內文', 'CTA 選項'];
+    var copyHeaders = ['編號', '漏斗階段', '風格', 'Hook', '內文', '優惠標籤', '優惠明細', 'CTA 選項'];
     sheet.getRange(2, 1, 1, copyHeaders.length).setValues([copyHeaders]);
     sheet.getRange(2, 1, 1, copyHeaders.length)
       .setFontWeight('bold').setBackground('#4F46E5').setFontColor('#FFFFFF');
 
     if (exportData.copies && exportData.copies.length > 0) {
       var copyRows = exportData.copies.map(function(c, i) {
-        return [i + 1, c.funnel || '', c.style || '', c.headline || '', c.body || '', c.cta || ''];
+        return [i + 1, c.funnel || '', c.style || '', c.headline || '', c.body || '', c.offerTag || '', c.offerDetails || '', c.cta || ''];
       });
       sheet.getRange(3, 1, copyRows.length, copyHeaders.length).setValues(copyRows);
     }

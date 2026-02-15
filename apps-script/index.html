@@ -555,6 +555,11 @@ body {
         <label for="selling-points">核心賣點</label>
         <textarea id="selling-points" rows="2" placeholder="例如：自動提醒喝水、App 追蹤飲水量、比同類產品便宜 30%"></textarea>
       </div>
+      <div class="form-group">
+        <label for="landing-url">Landing Page 網址</label>
+        <input type="url" id="landing-url" placeholder="例如：https://www.yourbrand.com/campaign">
+        <small class="hint">文案會自動在 Hook 下方插入此連結（留空則不插入）</small>
+      </div>
     </div>
 
     <!-- Andromeda 策略區 -->
@@ -1137,7 +1142,8 @@ function getProjectData() {
     productDescription: document.getElementById('product-desc').value.trim(),
     adGoal: document.getElementById('ad-goal').value,
     targetAudience: document.getElementById('audience').value.trim(),
-    keySellingPoints: document.getElementById('selling-points').value.trim()
+    keySellingPoints: document.getElementById('selling-points').value.trim(),
+    landingUrl: document.getElementById('landing-url').value.trim()
   };
   return S.project;
 }
@@ -1239,7 +1245,7 @@ function initCopy() {
       document.getElementById('copy-loading').style.display='block';
 
       // 去重：收集已生成文案標題
-      var existingHeadlines = S.copies.map(function(c) { return c.headline; });
+      var existingHeadlines = S.copies.map(function(c) { return c.hook || c.headline || ''; });
 
       var batchId = 'batch'+Date.now();
 
@@ -1252,7 +1258,17 @@ function initCopy() {
               if (Array.isArray(c.call_to_action)) ctas = c.call_to_action;
               else if (typeof c.call_to_action === 'string') ctas = [c.call_to_action];
               if (c.cta_options && Array.isArray(c.cta_options)) ctas = c.cta_options;
-              return {id:'c'+Date.now()+'-'+i, headline:c.headline, body:c.body, ctas:ctas, style:style, funnel:funnel, batchId:batchId};
+              return {
+                id:'c'+Date.now()+'-'+i,
+                hook: c.hook || c.headline || '',
+                body: c.body || '',
+                offerTag: c.offer_tag || '',
+                offerDetails: Array.isArray(c.offer_details) ? c.offer_details : [],
+                ctas: ctas,
+                style: style,
+                funnel: funnel,
+                batchId: batchId
+              };
             });
             S.copies = S.copies.concat(newCopies);
             renderCopies();
@@ -1305,13 +1321,38 @@ function renderCopies() {
   infoEl.innerHTML = '已累積 <strong>' + S.copies.length + '</strong> 組文案（' + summary + '）';
   infoEl.style.display = 'block';
 
+  var landingUrl = (S.project && S.project.landingUrl) ? S.project.landingUrl : '';
+
   container.innerHTML = S.copies.map(function(cp, i) {
     var fLabel = FUNNEL_LABELS[cp.funnel] || '';
     var sLabel = STYLE_LABELS[cp.style] || cp.style;
-    var ctasHtml = (cp.ctas || []).map(function(c, ci) {
+    var hook = cp.hook || cp.headline || '';
+    var ctasHtml = (cp.ctas || []).map(function(c) {
       return '<span class="cta-tag">' + esc(c) + '</span>';
     }).join(' ');
-    if (!ctasHtml && cp.cta) ctasHtml = '<span class="cta-tag">' + esc(cp.cta) + '</span>';
+
+    // Offer 區塊
+    var offerHtml = '';
+    if (cp.offerTag || (cp.offerDetails && cp.offerDetails.length > 0)) {
+      offerHtml = '<div class="offer-block" style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--radius);padding:0.65rem 0.8rem;margin-top:0.6rem;">';
+      if (cp.offerTag) offerHtml += '<div style="font-weight:700;font-size:0.85rem;color:#92400E;margin-bottom:0.3rem;">'+esc(cp.offerTag)+'</div>';
+      if (cp.offerDetails && cp.offerDetails.length > 0) {
+        offerHtml += '<ul style="margin:0;padding-left:1.2rem;font-size:0.82rem;color:#78350F;line-height:1.7;">'
+          + cp.offerDetails.map(function(d) { return '<li>'+esc(d)+'</li>'; }).join('')
+          + '</ul>';
+      }
+      offerHtml += '</div>';
+    }
+
+    // URL 區塊
+    var urlHtml = '';
+    if (landingUrl) {
+      urlHtml = '<div style="margin:0.35rem 0;font-size:0.82rem;">'
+        + '<a href="'+esc(landingUrl)+'" target="_blank" style="color:var(--primary);text-decoration:none;word-break:break-all;">▸ '+esc(landingUrl)+'</a></div>';
+    }
+
+    // Body 換行渲染
+    var bodyHtml = esc(cp.body).replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
 
     return '<div class="copy-card" id="card-'+cp.id+'">'
       + '<div class="copy-card-header">'
@@ -1323,9 +1364,11 @@ function renderCopies() {
       + '<button class="btn btn-secondary btn-sm" onclick="copyText(\''+cp.id+'\')">複製</button>'
       + '<button class="btn btn-danger btn-sm" onclick="removeCopy(\''+cp.id+'\')" title="刪除">✕</button>'
       + '</div></div>'
-      + '<h4>'+esc(cp.headline)+'</h4>'
-      + '<div class="body-text">'+esc(cp.body)+'</div>'
-      + '<div class="cta-list"><span style="font-size:0.75rem;color:var(--text-light);margin-right:0.3rem">CTA：</span>'+ctasHtml+'</div>'
+      + '<h4 style="font-size:1rem;line-height:1.5;">'+esc(hook)+'</h4>'
+      + urlHtml
+      + '<div class="body-text" style="white-space:pre-line;line-height:1.8;margin-top:0.4rem;">'+bodyHtml+'</div>'
+      + offerHtml
+      + '<div class="cta-list" style="margin-top:0.6rem;"><span style="font-size:0.75rem;color:var(--text-light);margin-right:0.3rem">CTA：</span>'+ctasHtml+'</div>'
       + '</div>';
   }).join('');
 }
@@ -1338,9 +1381,18 @@ function removeCopy(id) {
 function copyText(id) {
   var cp = S.copies.find(function(c){return c.id===id;});
   if (!cp) return;
-  var ctas = cp.ctas ? cp.ctas.join(' / ') : (cp.cta || '');
-  var t = '標題：'+cp.headline+'\n內文：'+cp.body+'\nCTA：'+ctas;
-  copyToClipboard(t);
+  var hook = cp.hook || cp.headline || '';
+  var body = (cp.body || '').replace(/\\n/g, '\n');
+  var landingUrl = (S.project && S.project.landingUrl) ? S.project.landingUrl : '';
+  var lines = [];
+  lines.push(hook);
+  if (landingUrl) lines.push('>>>' + landingUrl);
+  lines.push(body);
+  if (cp.offerTag) lines.push(cp.offerTag);
+  if (cp.offerDetails && cp.offerDetails.length > 0) {
+    cp.offerDetails.forEach(function(d) { lines.push('・' + d); });
+  }
+  copyToClipboard(lines.join('\n'));
 }
 
 // ============================================================
@@ -1489,7 +1541,8 @@ function renderCombos() {
     }).join('');
 
     var cpCtas = cp ? (cp.ctas||[cp.cta]).filter(Boolean).join(' / ') : '';
-    var cpPreview = cp ? '<div class="preview"><strong>'+esc(cp.headline)+'</strong><br>'+esc(cp.body.substring(0,60))+'...<br><span style="color:var(--primary);font-weight:600">'+esc(cpCtas)+'</span></div>' : '<p class="empty-hint" style="padding:0.3rem">尚未選擇</p>';
+    var cpHook = cp ? (cp.hook || cp.headline || '') : '';
+    var cpPreview = cp ? '<div class="preview"><strong>'+esc(cpHook)+'</strong><br>'+esc(cp.body.substring(0,60))+'...<br><span style="color:var(--primary);font-weight:600">'+esc(cpCtas)+'</span></div>' : '<p class="empty-hint" style="padding:0.3rem">尚未選擇</p>';
     var prPreview = pr ? '<div class="preview"><strong>'+esc(pr.scene_description)+'</strong><br><code style="font-size:0.73rem">'+esc(pr.prompt_en.substring(0,80))+'...</code></div>' : '<p class="empty-hint" style="padding:0.3rem">尚未選擇</p>';
 
     return '<div class="combo-card"><div class="combo-card-header"><h4>'+esc(cb.name)+'</h4>'
@@ -1530,15 +1583,17 @@ function initExport() {
 
 function getExportData() {
   return {
-    copies: S.copies.map(function(c){return{headline:c.headline,body:c.body,cta:(c.ctas||[c.cta]).filter(Boolean).join(' / '),style:STYLE_LABELS[c.style]||c.style,funnel:FUNNEL_LABELS[c.funnel]||''};}),
+    copies: S.copies.map(function(c){return{headline:c.hook||c.headline||'',body:c.body,offerTag:c.offerTag||'',offerDetails:(c.offerDetails||[]).join(' / '),cta:(c.ctas||[c.cta]).filter(Boolean).join(' / '),style:STYLE_LABELS[c.style]||c.style,funnel:FUNNEL_LABELS[c.funnel]||''};}),
     imagePrompts: S.imgPrompts,
     combinations: S.combos.map(function(cb){
       var cp = S.copies.find(function(c){return c.id===cb.copyId;});
       var pr = S.imgPrompts.find(function(p){return p.id===cb.promptId;});
       return {
         name: cb.name,
-        headline: cp?cp.headline:'',
+        headline: cp?(cp.hook||cp.headline||''):'',
         body: cp?cp.body:'',
+        offerTag: cp?(cp.offerTag||''):'',
+        offerDetails: cp?(cp.offerDetails||[]).join(' / '):'',
         cta: cp?(cp.ctas||[cp.cta]).filter(Boolean).join(' / '):'',
         imagePromptEn: pr?pr.prompt_en:'',
         imageScene: pr?pr.scene_description:''
@@ -1551,9 +1606,9 @@ function refreshExportPreview() {
   var el = document.getElementById('export-table');
   if (S.combos.length===0) { el.innerHTML='<p class="empty-hint">尚未建立任何素材組合。</p>'; return; }
   var data = getExportData();
-  var html = '<table class="export-table"><thead><tr><th>組合</th><th>標題</th><th>內文</th><th>CTA 選項</th><th>圖片場景</th></tr></thead><tbody>';
+  var html = '<table class="export-table"><thead><tr><th>組合</th><th>Hook</th><th>內文</th><th>優惠標籤</th><th>CTA 選項</th><th>圖片場景</th></tr></thead><tbody>';
   data.combinations.forEach(function(r){
-    html+='<tr><td>'+esc(r.name)+'</td><td>'+esc(r.headline)+'</td><td>'+esc(r.body.substring(0,50))+(r.body.length>50?'...':'')+'</td><td>'+esc(r.cta)+'</td><td>'+esc(r.imageScene)+'</td></tr>';
+    html+='<tr><td>'+esc(r.name)+'</td><td>'+esc(r.headline)+'</td><td>'+esc(r.body.substring(0,50))+(r.body.length>50?'...':'')+'</td><td>'+esc(r.offerTag||'')+'</td><td>'+esc(r.cta)+'</td><td>'+esc(r.imageScene)+'</td></tr>';
   });
   html+='</tbody></table>';
   el.innerHTML=html;
@@ -1564,7 +1619,16 @@ function exportClipboard() {
   if (d.combinations.length===0&&d.copies.length===0) { toast('沒有可匯出的資料。','warning'); return; }
   var t = '=== AI 廣告素材 ===\n\n';
   t += '【文案】\n';
-  d.copies.forEach(function(c,i){t+='#'+(i+1)+' ['+c.funnel+' / '+c.style+']\n標題：'+c.headline+'\n內文：'+c.body+'\nCTA 選項：'+c.cta+'\n\n';});
+  var landingUrl = (S.project && S.project.landingUrl) || '';
+  d.copies.forEach(function(c,i){
+    t+='#'+(i+1)+' ['+c.funnel+' / '+c.style+']\n';
+    t+=c.headline+'\n';
+    if (landingUrl) t+='>>>'+landingUrl+'\n';
+    t+=c.body.replace(/\\n/g,'\n')+'\n';
+    if (c.offerTag) t+=c.offerTag+'\n';
+    if (c.offerDetails) t+=c.offerDetails+'\n';
+    t+='CTA：'+c.cta+'\n\n';
+  });
   t += '【圖片 Prompt】\n';
   d.imagePrompts.forEach(function(p,i){t+='#'+(i+1)+' '+p.scene_description+' ['+p.aspect_ratio+']\n'+p.prompt_en+'\n排版：'+(p.text_layout||'無')+'\n\n';});
   if (d.combinations.length>0) {
@@ -1577,8 +1641,8 @@ function exportClipboard() {
 function exportCSV() {
   var d = getExportData();
   if (d.copies.length===0) { toast('沒有可匯出的資料。','warning'); return; }
-  var rows = [['類型','編號','漏斗階段','標題/場景','內文/英文Prompt','CTA選項/文字排版','風格/比例']];
-  d.copies.forEach(function(c,i){rows.push(['文案',i+1,c.funnel,c.headline,c.body,c.cta,c.style]);});
+  var rows = [['類型','編號','漏斗階段','Hook/場景','內文/英文Prompt','優惠標籤','優惠明細','CTA選項/文字排版','風格/比例']];
+  d.copies.forEach(function(c,i){rows.push(['文案',i+1,c.funnel,c.headline,c.body,c.offerTag||'',c.offerDetails||'',c.cta,c.style]);});
   d.imagePrompts.forEach(function(p,i){rows.push(['圖片Prompt',i+1,'',p.scene_description,p.prompt_en,p.text_layout||'',p.aspect_ratio]);});
   d.combinations.forEach(function(c){rows.push(['組合',c.name,'',c.headline,c.imageScene,c.cta,'']);});
   var csv = rows.map(function(r){return r.map(function(v){return '"'+(v+'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
