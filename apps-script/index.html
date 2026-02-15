@@ -555,6 +555,28 @@ body {
         <textarea id="selling-points" rows="2" placeholder="例如：自動提醒喝水、App 追蹤飲水量、比同類產品便宜 30%"></textarea>
       </div>
     </div>
+
+    <!-- Andromeda 策略區 -->
+    <div class="card" style="margin-top:1rem;border-left:3px solid #7C3AED;">
+      <h3 style="font-size:1rem;color:#7C3AED;margin-bottom:0.3rem;">Andromeda 創意策略（選填）</h3>
+      <p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.8rem;">Avatar + Mechanism = Concept — 拆分子頭像與產品機制，讓 AI 文案更精準</p>
+
+      <div class="form-group">
+        <label>子頭像 (Sub-Avatars)</label>
+        <small class="hint">AI 會根據你的產品和受眾，拆分出 4 個具體的目標角色。勾選要鎖定的對象。</small>
+        <button class="btn btn-secondary btn-sm" id="gen-avatars" style="margin-top:0.3rem;">AI 生成子頭像</button>
+        <div id="avatar-loading" class="loading" style="display:none"><div class="spinner"></div><p>分析受眾中...</p></div>
+        <div id="avatar-cards" style="display:none;margin-top:0.6rem;"></div>
+      </div>
+
+      <div class="form-group" id="mechanism-section" style="display:none;">
+        <label>產品機制 (Mechanisms)</label>
+        <small class="hint">AI 將產品特點對應到子頭像的具體問題。</small>
+        <button class="btn btn-secondary btn-sm" id="gen-mechanisms" style="margin-top:0.3rem;">AI 拆解產品機制</button>
+        <div id="mech-loading" class="loading" style="display:none"><div class="spinner"></div><p>拆解機制中...</p></div>
+        <div id="mech-list" style="display:none;margin-top:0.6rem;"></div>
+      </div>
+    </div>
     <div class="section-footer">
       <button class="btn btn-secondary" onclick="goTo('sec-api')">&larr; 上一步</button>
       <button class="btn btn-primary" onclick="goTo('sec-copy')">下一步：文案生成 &rarr;</button>
@@ -625,8 +647,22 @@ body {
             <option value="8">8 組</option>
           </select>
         </div>
-        <div class="form-group" style="display:flex;align-items:flex-end;">
+        <div class="form-group">
+          <label for="offer-type">優惠策略 (Offer)</label>
+          <select id="offer-type">
+            <option value="none">無優惠（品牌認知）</option>
+            <option value="discount">折扣優惠</option>
+            <option value="bundle">產品組合包</option>
+            <option value="free-shipping">免運費</option>
+            <option value="free-trial">免費試用/體驗</option>
+            <option value="gift">贈品</option>
+            <option value="limited">限時/限量</option>
+          </select>
         </div>
+      </div>
+      <div class="form-group" id="offer-detail-group" style="display:none;">
+        <label for="offer-detail">優惠細節</label>
+        <input type="text" id="offer-detail" placeholder="例如：全館 7 折、買二送一、滿 $999 免運...">
       </div>
       <div id="style-tip" class="ai-suggestion" style="display:none"></div>
       <div class="form-actions">
@@ -784,7 +820,9 @@ var S = {
   copies: [],    // {id, headline, body, cta, style}
   imgPrompts: [], // {id, prompt_en, prompt_zh, scene_description, text_layout, aspect_ratio}
   combos: [],    // {id, name, copyId, promptId}
-  nextCombo: 1
+  nextCombo: 1,
+  subAvatars: [],   // Andromeda: [{name, desc, wants[], needs[], selected:bool}]
+  mechanisms: []    // Andromeda: [{mechanism, solves, for_avatar}]
 };
 
 // ============================================================
@@ -947,6 +985,105 @@ function initProject() {
         .generatePersona(S.provider, S.apiKey, desc, aud, document.getElementById('industry').value);
     });
   };
+
+  // Andromeda: 生成子頭像
+  document.getElementById('gen-avatars').onclick = function() {
+    var desc = document.getElementById('product-desc').value.trim();
+    var aud = document.getElementById('audience').value.trim();
+    var industry = document.getElementById('industry').value;
+    if (!desc || !aud) { toast('請先填寫產品描述和目標受眾。','warning'); return; }
+
+    var btn = document.getElementById('gen-avatars');
+    btn.disabled = true; btn.textContent = '生成中...';
+    document.getElementById('avatar-loading').style.display = 'block';
+    document.getElementById('avatar-cards').style.display = 'none';
+
+    ensureApiKey(function() {
+      google.script.run
+        .withSuccessHandler(function(r) {
+          try {
+            var arr = parseJson(r);
+            S.subAvatars = arr.map(function(a) { a.selected = true; return a; });
+            renderAvatarCards();
+            document.getElementById('mechanism-section').style.display = 'block';
+          } catch(e) { toast('子頭像格式錯誤，請重試。','error'); }
+          btn.disabled = false; btn.textContent = 'AI 生成子頭像';
+          document.getElementById('avatar-loading').style.display = 'none';
+        })
+        .withFailureHandler(function(e) {
+          toast('子頭像生成失敗：'+e.message,'error');
+          btn.disabled = false; btn.textContent = 'AI 生成子頭像';
+          document.getElementById('avatar-loading').style.display = 'none';
+        })
+        .generateSubAvatars(S.provider, S.apiKey, desc, aud, industry);
+    });
+  };
+
+  // Andromeda: 生成機制對應
+  document.getElementById('gen-mechanisms').onclick = function() {
+    var desc = document.getElementById('product-desc').value.trim();
+    var sp = document.getElementById('selling-points').value.trim();
+    var selectedAvatars = S.subAvatars.filter(function(a) { return a.selected; });
+    if (!desc) { toast('請先填寫產品描述。','warning'); return; }
+    if (selectedAvatars.length === 0) { toast('請至少勾選一個子頭像。','warning'); return; }
+
+    var btn = document.getElementById('gen-mechanisms');
+    btn.disabled = true; btn.textContent = '拆解中...';
+    document.getElementById('mech-loading').style.display = 'block';
+    document.getElementById('mech-list').style.display = 'none';
+
+    ensureApiKey(function() {
+      google.script.run
+        .withSuccessHandler(function(r) {
+          try {
+            var arr = parseJson(r);
+            S.mechanisms = arr;
+            renderMechanisms();
+          } catch(e) { toast('機制格式錯誤，請重試。','error'); }
+          btn.disabled = false; btn.textContent = 'AI 拆解產品機制';
+          document.getElementById('mech-loading').style.display = 'none';
+        })
+        .withFailureHandler(function(e) {
+          toast('機制拆解失敗：'+e.message,'error');
+          btn.disabled = false; btn.textContent = 'AI 拆解產品機制';
+          document.getElementById('mech-loading').style.display = 'none';
+        })
+        .generateMechanisms(S.provider, S.apiKey, desc, sp, selectedAvatars);
+    });
+  };
+}
+
+function renderAvatarCards() {
+  var container = document.getElementById('avatar-cards');
+  container.style.display = 'block';
+  container.innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">' +
+    S.subAvatars.map(function(a, i) {
+      return '<label style="display:flex;gap:0.5rem;padding:0.7rem;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;background:#FAFAFA;">' +
+        '<input type="checkbox" checked data-avatar-idx="'+i+'" style="margin-top:0.15rem;">' +
+        '<div><strong style="font-size:0.85rem;color:#7C3AED;">'+escHtml(a.name)+'</strong>' +
+        '<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.15rem;">'+escHtml(a.desc)+'</div>' +
+        '<div style="font-size:0.73rem;color:var(--text-light);margin-top:0.2rem;">' +
+        '想要：'+(a.wants||[]).join('、')+' ｜ 需要：'+(a.needs||[]).join('、')+'</div></div></label>';
+    }).join('') + '</div>';
+
+  container.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      var idx = parseInt(this.dataset.avatarIdx);
+      S.subAvatars[idx].selected = this.checked;
+    });
+  });
+}
+
+function renderMechanisms() {
+  var container = document.getElementById('mech-list');
+  container.style.display = 'block';
+  container.innerHTML = '<div style="display:flex;flex-direction:column;gap:0.4rem;">' +
+    S.mechanisms.map(function(m) {
+      return '<div style="padding:0.6rem;border:1px solid var(--border);border-radius:var(--radius);background:#FAFAFA;">' +
+        '<div style="font-size:0.85rem;font-weight:600;color:#7C3AED;">'+escHtml(m.mechanism)+'</div>' +
+        '<div style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.15rem;">' +
+        '解決「'+escHtml(m.solves)+'」→ 針對 <strong>'+escHtml(m.for_avatar)+'</strong></div></div>';
+    }).join('') + '</div>';
 }
 
 function getProjectData() {
@@ -959,6 +1096,22 @@ function getProjectData() {
     keySellingPoints: document.getElementById('selling-points').value.trim()
   };
   return S.project;
+}
+
+// ============================================================
+// Andromeda Data Builder
+// ============================================================
+function buildAndromedaData() {
+  var selectedAvatars = S.subAvatars.filter(function(a) { return a.selected; });
+  var offerType = document.getElementById('offer-type').value;
+  var offerDetail = document.getElementById('offer-detail').value.trim();
+  if (selectedAvatars.length === 0 && S.mechanisms.length === 0 && offerType === 'none') return null;
+  return {
+    selectedAvatars: selectedAvatars,
+    mechanisms: S.mechanisms,
+    offerType: offerType,
+    offerDetail: offerDetail
+  };
 }
 
 // ============================================================
@@ -1020,6 +1173,12 @@ function initCopy() {
     updateStyleRecommendation();
   };
 
+  // Andromeda: 優惠策略切換
+  document.getElementById('offer-type').onchange = function() {
+    var show = this.value !== 'none';
+    document.getElementById('offer-detail-group').style.display = show ? 'block' : 'none';
+  };
+
   document.getElementById('gen-copy').onclick = function() {
     var proj = getProjectData();
     if (!proj.productDescription||!proj.adGoal||!proj.targetAudience) {
@@ -1063,7 +1222,7 @@ function initCopy() {
           btn.disabled=false;
           document.getElementById('copy-loading').style.display='none';
         })
-        .generateAdCopy(S.provider, S.apiKey, proj, style, count, funnel, hookAngle, adPlatform, existingHeadlines);
+        .generateAdCopy(S.provider, S.apiKey, proj, style, count, funnel, hookAngle, adPlatform, existingHeadlines, buildAndromedaData());
     });
   };
 
@@ -1477,6 +1636,10 @@ function showMsg(id, type, msg) {
 function esc(s) {
   if (!s) return '';
   var d=document.createElement('div'); d.textContent=s; return d.innerHTML;
+}
+
+function escHtml(s) {
+  var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML;
 }
 
 function formatText(t) {

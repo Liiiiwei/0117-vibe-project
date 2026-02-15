@@ -150,6 +150,54 @@ function generatePersona(provider, apiKey, productDescription, targetAudience, i
 }
 
 // ============================================================
+// Andromeda 策略：子頭像 + 機制生成
+// ============================================================
+
+function generateSubAvatars(provider, apiKey, productDescription, targetAudience, industry) {
+  var prompt = '你是一位資深的消費者洞察專家，擅長將廣泛的目標受眾拆分為具體的「子頭像 (Sub-Avatar)」。\n\n'
+    + '根據以下產品與受眾資訊，生成 4 個具體的子頭像。\n\n'
+    + '產品描述：' + productDescription + '\n'
+    + '目標受眾：' + targetAudience + '\n'
+    + '產業類型：' + (industry || '通用') + '\n\n'
+    + '每個子頭像必須包含：\n'
+    + '1. name：一個具象化的暱稱（如「忙碌媽媽小美」「精打細算 OL 小芳」），10 字以內\n'
+    + '2. desc：一句話描述這個人（年齡、身份、關鍵特徵），20 字以內\n'
+    + '3. wants：這個人最想要的 2-3 件事（慾望層面），JSON 字串陣列\n'
+    + '4. needs：這個人實際需要解決的 2-3 件事（需求層面），JSON 字串陣列\n\n'
+    + '子頭像之間要有明顯差異（不同年齡/動機/痛點/消費習慣）。\n\n'
+    + '請以 JSON 陣列格式回覆，例如：\n'
+    + '[{"name":"...","desc":"...","wants":["...","..."],"needs":["...","..."]}]\n\n'
+    + '請只回覆 JSON 陣列，不要包含其他文字或 markdown 標記。';
+
+  return callTextAI(provider, apiKey, prompt);
+}
+
+function generateMechanisms(provider, apiKey, productDescription, keySellingPoints, subAvatars) {
+  var avatarList = '';
+  if (subAvatars && subAvatars.length > 0) {
+    avatarList = '已定義的子頭像：\n'
+      + subAvatars.map(function(a, i) {
+          return (i + 1) + '. ' + a.name + '（' + a.desc + '）— 慾望：' + (a.wants || []).join('、') + '；需求：' + (a.needs || []).join('、');
+        }).join('\n') + '\n\n';
+  }
+
+  var prompt = '你是一位產品策略專家，擅長將產品特點拆解為「機制 (Mechanism)」並對應到具體受眾的問題。\n\n'
+    + '根據以下產品資訊，拆解出 5-8 個具體的產品機制，並說明每個機制解決哪個子頭像的哪個問題。\n\n'
+    + '產品描述：' + productDescription + '\n'
+    + '核心賣點：' + (keySellingPoints || '無') + '\n\n'
+    + avatarList
+    + '每個機制必須包含：\n'
+    + '1. mechanism：產品特點/機制名稱（如「30秒速乾配方」「AI 智能推薦」），15 字以內\n'
+    + '2. solves：這個機制解決的具體問題（如「沒時間等保養品乾」），20 字以內\n'
+    + '3. for_avatar：最適合哪個子頭像的名稱\n\n'
+    + '請以 JSON 陣列格式回覆，例如：\n'
+    + '[{"mechanism":"...","solves":"...","for_avatar":"..."}]\n\n'
+    + '請只回覆 JSON 陣列，不要包含其他文字或 markdown 標記。';
+
+  return callTextAI(provider, apiKey, prompt);
+}
+
+// ============================================================
 // 文案生成
 // ============================================================
 
@@ -174,7 +222,7 @@ function getFunnelStyleMatrix() {
   };
 }
 
-function generateAdCopy(provider, apiKey, projectData, style, count, funnel, hookAngle, adPlatform, existingHeadlines) {
+function generateAdCopy(provider, apiKey, projectData, style, count, funnel, hookAngle, adPlatform, existingHeadlines, andromedaData) {
   var styleMap = {
     professional: '專業可靠、數據支撐、語氣正式、引用權威來源',
     humorous: '幽默輕鬆、有趣味性、用比喻或反差製造笑點、容易引起共鳴',
@@ -341,12 +389,64 @@ function generateAdCopy(provider, apiKey, projectData, style, count, funnel, hoo
   // 去重：將已生成的標題注入 prompt
   var dedupPrompt = '';
   if (existingHeadlines && existingHeadlines.length > 0) {
-    var headlines = existingHeadlines.slice(-20); // 最多取最近 20 筆避免 token 浪費
+    var headlines = existingHeadlines.slice(-20);
     dedupPrompt = '\n【重要 - 避免重複】\n以下是已經生成過的文案標題，新生成的文案必須使用完全不同的切角、句式和用詞，嚴禁與以下標題相似：\n'
       + headlines.map(function(h, i) { return (i + 1) + '. ' + h; }).join('\n') + '\n';
   }
 
+  // Andromeda 策略注入（子頭像 + 機制 + 教育 + 優惠）
+  var andromedaPrompt = '';
+  if (andromedaData) {
+    // 子頭像
+    if (andromedaData.selectedAvatars && andromedaData.selectedAvatars.length > 0) {
+      andromedaPrompt += '\n【Andromeda 策略 — 目標子頭像】\n'
+        + '文案必須針對以下具體受眾角色撰寫，每組文案鎖定其中一個子頭像：\n';
+      andromedaData.selectedAvatars.forEach(function(av, i) {
+        andromedaPrompt += (i + 1) + '. 「' + av.name + '」— ' + av.desc + '\n'
+          + '   慾望：' + (av.wants || []).join('、') + '\n'
+          + '   需求：' + (av.needs || []).join('、') + '\n';
+      });
+    }
+
+    // 機制對應
+    if (andromedaData.mechanisms && andromedaData.mechanisms.length > 0) {
+      andromedaPrompt += '\n【Andromeda 策略 — 產品機制】\n'
+        + '以下是產品的具體機制（特點），文案 body 必須展示對應的機制如何解決子頭像的問題：\n';
+      andromedaData.mechanisms.forEach(function(m, i) {
+        andromedaPrompt += (i + 1) + '. 機制：' + m.mechanism + ' → 解決：' + m.solves + '（對應：' + m.for_avatar + '）\n';
+      });
+    }
+
+    // 教育策略
+    andromedaPrompt += '\n【Andromeda 策略 — 教育框架 (Education Frame)】\n'
+      + '每組文案必須遵循以下教育策略結構：\n'
+      + '1. 開頭（Hook）：框架化一個受眾沒意識到的問題，製造「好奇心差距」\n'
+      + '   — 讓受眾想「原來是這樣！」或「我怎麼沒想到？」\n'
+      + '   — 例如：「你知道嗎？90% 的人保養無效，不是產品不好，而是...」\n'
+      + '2. 中段（Mechanism Bridge）：展示產品機制作為該問題的「唯一最佳解方」\n'
+      + '   — 不是硬推產品，而是讓受眾理解「為什麼需要這個」\n'
+      + '3. 結尾（CTA）：基於教育內容，自然引導行動\n';
+
+    // 優惠策略
+    if (andromedaData.offerType && andromedaData.offerType !== 'none') {
+      var offerLabels = {
+        'discount': '折扣優惠',
+        'bundle': '產品組合包',
+        'free-shipping': '免運費',
+        'free-trial': '免費試用/體驗',
+        'gift': '贈品',
+        'limited': '限時/限量'
+      };
+      andromedaPrompt += '\n【Andromeda 策略 — 優惠設計 (Offer)】\n'
+        + '優惠類型：' + (offerLabels[andromedaData.offerType] || andromedaData.offerType) + '\n'
+        + '優惠細節：' + (andromedaData.offerDetail || '由 AI 根據產品合理設計') + '\n'
+        + '要求：將優惠自然融入文案中，不要生硬堆砌。優惠要成為推動行動的「最後一推」。\n'
+        + '提示：有效的折扣通常 30% 以上才有感；組合包要強調「感知價值」；免運要強調「省下的金額」。\n';
+    }
+  }
+
   var prompt = frameworkPrompt + '\n' + funnelPrompt + '\n' + goalPrompt + '\n' + hookPrompt + '\n' + platformPrompt
+    + andromedaPrompt
     + '\n請根據以下資訊，生成 ' + count + ' 組廣告文案。\n\n'
     + '產品名稱：' + projectData.productName + '\n'
     + '產品描述：' + projectData.productDescription + '\n'
